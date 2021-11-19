@@ -1,0 +1,6 @@
+*.vcd
+a.out
+obj_dir
+*.sim
+*.swp
+*.log
