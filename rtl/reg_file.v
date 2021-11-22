@@ -7,8 +7,9 @@ module reg_file(
     input logic[4:0] write_addr,
     input logic write,
     input logic[31:0] data_in,
-    output logic [31:0] a,
-    output logic [31:0] b
+    output logic[31:0] a,
+    output logic[31:0] b
+    output logic[31:0] register_v0
 );
     logic[31: 0] regs[31];
     integer i; 
@@ -17,6 +18,7 @@ module reg_file(
     always_comb begin
         a = addr_a == 0 ? 0 : regs[addr_a - 1];
         b = addr_b == 0 ? 0 : regs[addr_b - 1];
+        register_v0 = regs[1];
     end 
 
     /* Reset registers to 0 */
