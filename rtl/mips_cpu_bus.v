@@ -36,11 +36,17 @@ module mips_cpu_bus(
     logic[31: 0] ir, effective_ir;
     state_t state;
 
-    /* R-type */ 
+    /* R-type encodings */ 
     opcode_t opcode;
     logic[4:0] rs, rt, rd;
     logic[4:0] shamnt;
     funct_t func;
+
+    /* Register file outputs */  
+    logic[31:0] rs_val, rt_val;
+
+    logic reg_file_write;
+    logic [31:0] reg_file_data_in;
 
     always_comb begin
         /* Decoding */
@@ -50,7 +56,7 @@ module mips_cpu_bus(
         opcode = effective_ir[31:26];
         rs     = effective_ir[25:21];
         rt     = effective_ir[20:16];
-        rd     = effective_ir[15:11];
+        rd     = opcode == OPCODE_RTYPE ? effective_ir[15:11] : rt;
         shamnt = effective_ir[10:6];
         func   = effective_ir[5:0];
 
@@ -67,27 +73,29 @@ module mips_cpu_bus(
             state <= STATE_FETCH;
         end
         else begin
-            case(state) begin 
+            case(state) begin : states
                 STATE_FETCH begin
-                    pc <= pc + 1
-                    state <= STATE_EXECUTE;
+                    /* Won't exit the fetch state if bus isn't ready to be read 
+                     * from yet. Further, it won't do anything if its still
+                     * waiting */ 
+                    if(!waitrequest) begin
+                        pc <= pc + 1
+                        state <= STATE_EXECUTE;
+                    end
                 end
                 STATE_EXECUTE begin
-                    /* Won't exit the execute state if bus hasn't been read 
-                     * from yet. Further, it won't do anything if its still
-                     * waiting */
-                    if(!waitrequest) begin
+                    
                         ir <= readdata;
                         case(opcode) 
-                            OPCODE_RTYPE begin
+                            OPCODE_RTYPE begin : rtype
                                 case(func)
                                     FUNCT_ADDU begin
                                         
                                     end 
                                 endcase 
-                            end                
+                                state <= STATE_FETCH;
+                            end : rtype
                         endcase
-                    end
                 end
                 STATE_MEMORY begin
                    
@@ -95,20 +103,20 @@ module mips_cpu_bus(
                 STATE_WRITEBACK begin
 
                 end
-            end
-             
+            end : states
         end
     end
 
     reg_file reg_file(.clk(clk), 
                       .reset(reset), 
-                      .addr_a(),
-                      .addr_b(),
-                      .write_addr(),
-                      .write(),
-                      .data_in(),
-                      .a(),
-                      .b()
+                      .addr_a(rs),
+                      .addr_b(rt),
+                      .write_addr(rd),
+                      .write(reg_file_write),
+                      .data_in(reg_file_data_in),
+                      .a(rs_val),
+                      .b(rt_val)
+                      .register_v0(register_v0);
     );
     
 endmodule
