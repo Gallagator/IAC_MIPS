@@ -8,7 +8,7 @@ module reg_file(
     input logic write,
     input logic[31:0] data_in,
     output logic[31:0] a,
-    output logic[31:0] b
+    output logic[31:0] b,
     output logic[31:0] register_v0
 );
     logic[31: 0] regs[31];
@@ -21,18 +21,15 @@ module reg_file(
         register_v0 = regs[1];
     end 
 
-    /* Reset registers to 0 */
-    always_ff @(posedge clk) begin
+    /* Write to register on negative edge */
+    always_ff @(negedge clk) begin
+        /* Reset registers to 0 */
         if(reset) begin
             for(i = 0; i < 31; i += 1) begin
                 regs[i] <= 0;
             end
         end 
-    end
-
-    /* Write to register on negative edge */
-    always_ff @(negedge clk) begin
-        if(!reset && write && write_addr != 0) begin
+        else if(!reset && write && write_addr != 0) begin
             regs[write_addr - 1] <= data_in;
         end 
     end
