@@ -1,0 +1,1 @@
+iverilog -Wall  -g2012 rtl/mips_cpu_bus.v rtl/alu.v rtl/reg_file.v rtl/test/RAM_32x4096.v rtl/test/mips_cpu_bus_generic_tb.v -Prtl/test/mips_cpu_bus_generic_tb.v.RAM_INIT_FILE=\"tests/addu.hex.txt\"

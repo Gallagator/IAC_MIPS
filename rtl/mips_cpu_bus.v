@@ -24,10 +24,10 @@ module mips_cpu_bus(
     input logic[31:0] readdata
 );
     typedef enum logic[2:0] {
-        STATE_FETCH,
-        STATE_EXECUTE,
-        STATE_MEMORY,
-        STATE_WRITEBACK
+        STATE_FETCH = 0,
+        STATE_EXECUTE = 1,
+        STATE_MEMORY = 2,
+        STATE_WRITEBACK = 3
     } state_t;
 
     typedef enum logic[5:0] {
@@ -94,7 +94,8 @@ module mips_cpu_bus(
     logic[31:0] alu_out;
     logic[5:0] fncode;
 
-    always_comb begin
+    /* iverilog won't allow always_comb when selecting bits with [] */
+    always @(*) begin
         
         /* To be assigned more carefully: */
         write = 0;
@@ -138,53 +139,58 @@ module mips_cpu_bus(
         end
 
         /* Fetch */
-        if(state == STATE_FETCH) begin
-            address = pc << 2;
+        if(state == STATE_FETCH && !waitrequest) begin
+            address = pc;
             read = 1;
+        end
+        else begin
+            read = 0; 
+            // address needs to be set.
         end
     end
 
-    always_ff @(posedge clk) begin
-        if(active) begin
-            if(reset) begin
-                pc <= 32'hBFC0_0000;
-                state <= STATE_FETCH;
-            end
-            else begin
-                case(state)  
-                    STATE_FETCH : begin
-                        /* Won't exit the fetch state if bus isn't ready to be
-                         * read from yet. Further, it won't do anything if 
-                         * it's still * waiting */ 
-                        if(!waitrequest) begin
-                            pc <= pc + 1;
-                            state <= STATE_EXECUTE;
-                        end
+    always @(posedge clk) begin
+        if(reset) begin
+            pc <= 32'hBFC0_0000;
+            state <= STATE_FETCH;
+        end
+        else if(active) begin
+            case(state)  
+                STATE_FETCH : begin
+                    /* Won't exit the fetch state if bus isn't ready to be
+                     * read from yet. Further, it won't do anything if 
+                     * it's still waiting */ 
+                    if(!waitrequest) begin
+                        pc <= pc + 4;
+                        state <= STATE_EXECUTE;
+                        $display("clk: %d\nstate %d\naddress: %x\nread: %d\nreadata: %x\n\n", clk, state, address, read, readdata);
                     end
-                    STATE_EXECUTE : begin
-                        ir <= readdata;
-                        case(instr.instr_type) 
-                            RTYPE : begin
+                end
+                STATE_EXECUTE : begin
+                    $display("clk: %d\nstate %d\naddress: %x\nread: %d\nreadata: %x\n\n", clk, state, address, read, readdata);
+                    ir <= readdata;
+                    case(instr.instr_type) 
+                        RTYPE : begin
+                            
+                        end 
+                        ITYPE : begin
 
-                            end 
-                            ITYPE : begin
+                        end 
+                        JTYPE : begin
 
-                            end 
-                            JTYPE : begin
-
-                            end 
-                            default : ;
-                        endcase
-                    end
-                    STATE_MEMORY : begin
-                       
-                    end
-                    STATE_WRITEBACK : begin
-                        state <= STATE_FETCH;
-                    end
-                    default : ;
-                endcase
-            end
+                        end 
+                        default : ;
+                    endcase
+                    state <= STATE_FETCH;
+                end
+                STATE_MEMORY : begin
+                   
+                end
+                STATE_WRITEBACK : begin
+                    state <= STATE_FETCH;
+                end
+                default : ;
+            endcase
         end
     end
 
