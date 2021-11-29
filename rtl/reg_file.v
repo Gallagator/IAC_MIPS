@@ -21,8 +21,8 @@ module reg_file(
         register_v0 = regs[1];
     end 
 
-    /* Write to register on negative edge */
-    always_ff @(negedge clk) begin
+    /* Write to register on positive edge */
+    always_ff @(posedge clk) begin
         /* Reset registers to 0 */
         if(reset) begin
             for(i = 0; i < 31; i += 1) begin

@@ -42,7 +42,7 @@ module mips_cpu_bus(
         logic[4:0] rt;
         logic[4:0] rd;
         logic[4:0] shamnt;
-        funct_t fncode;
+        logic[5:0] fncode;
     } rtype_t;
     
     typedef struct packed {
@@ -74,9 +74,9 @@ module mips_cpu_bus(
     } instruction_t;
 
     /* Program Counter, instruction register, state */
-    logic[31: 0] pc, pc_next;
+    logic[31: 0] pc/*, pc_next*/;
     /* TODO REMEMBER TO SET IR_NEXT, AND EFFECTIVE_IR TO THE CORRECT INSTR! */ 
-    logic[31: 0] ir, ir_next, effective_ir;
+    logic[31: 0] ir/*, ir_next */, effective_ir;
     logic[5:0] opcode;
     instruction_t instr;
     state_t state;
@@ -95,6 +95,12 @@ module mips_cpu_bus(
     logic[5:0] fncode;
 
     always_comb begin
+        
+        /* To be assigned more carefully: */
+        write = 0;
+        writedata = 0;
+        byteenable = 0;
+
         /* Set active signal */
         active = pc != 0;
         /* Decoding */
@@ -111,7 +117,7 @@ module mips_cpu_bus(
             instr.instruction.rtype.shamnt = effective_ir[10:6];
             instr.instruction.rtype.fncode = effective_ir[5:0];
 
-            reg_file_rs= instr.instruction.rtype.rs;
+            reg_file_rs = instr.instruction.rtype.rs;
             reg_file_rt = instr.instruction.rtype.rt;
             reg_file_rd = instr.instruction.rtype.rd;
             reg_file_write = state == STATE_EXECUTE;
@@ -127,7 +133,7 @@ module mips_cpu_bus(
             instr.instr_type = ITYPE;
             instr.instruction.itype.opcode    = opcode;
             instr.instruction.itype.rs        = effective_ir[25:21];
-            instr.instruction.itype.rt        = effective_ir[20: 16];
+            instr.instruction.itype.rt        = effective_ir[20:16];
             instr.instruction.itype.immediate = effective_ir[15:0];
         end
 
