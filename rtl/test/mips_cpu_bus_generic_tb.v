@@ -47,6 +47,7 @@ module mips_cpu_bus_generic_tb();
             #5;
             clk = !clk;
         end    
+        $display("output: %d", register_v0);
         $fatal(2, "Simulation timeout");
     end
 
@@ -68,23 +69,25 @@ module mips_cpu_bus_generic_tb();
     assign prog_addr = address[13:2];
 
     always_comb begin
-        
+
+        // Is the address in the stack region.        
         if(address < (4096 << 2)) begin
             stack_read = read;
             stack_write = write;
-            readdata = read ? stack_read_data : 0;
-        end 
+            readdata = stack_read_data;
+        end
         else begin
             stack_read = 0;
             stack_write = 0;
             readdata = 0;
         end
 
+        // Is the address in the program region.
         if(address >= 32'hBFC0_0000 && 
            address < (32'hBFC0_0000 + (4096 << 2)) ) begin
             prog_read = read;
             prog_write = write;
-            readdata = read ? prog_read_data : 0;
+            readdata = prog_read_data;
         end 
         else begin
             stack_read = 0;
