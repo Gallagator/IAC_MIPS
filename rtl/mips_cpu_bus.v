@@ -3,6 +3,11 @@
 // i3
 // Fetch, Decode, execute, memory_access, WB
 
+typedef enum logic[5:0] {
+    FUNCT_ADDU = 6'b10_0001,
+    FUNCT_JR   = 6'b00_1000
+} funct_t;
+
 module mips_cpu_bus(
     /* Standard signals */
     input logic clk,
@@ -159,15 +164,17 @@ module mips_cpu_bus(
                     if(!waitrequest) begin
                         pc <= pc + 4;
                         state <= STATE_EXECUTE;
-                        $display("clk: %d\nstate %d\naddress: %x\nread: %d\nreadata: %x\n\n", clk, state, address, read, readdata);
+                        $display("state FETCH\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, readdata);
                     end
                 end
                 STATE_EXECUTE : begin
-                    $display("clk: %d\nstate %d\naddress: %x\nread: %d\nreadata: %x\n\n", clk, state, address, read, readdata);
+                    $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
                     ir <= readdata;
                     case(instr.instr_type) 
                         RTYPE : begin
-                            
+                            if(instr.instruction.rtype.fncode == FUNCT_JR) begin
+                                pc <= instr.instruction.rtype.rs;
+                            end
                         end 
                         ITYPE : begin
 
