@@ -1,5 +1,6 @@
 module mips_cpu_bus_generic_tb();
     parameter RAM_INIT_FILE = "";
+    parameter EXPECTED_REG_V0 = -1213;
     parameter TIMEOUT_CYCLES = 50_000;
 
     logic clk;
@@ -62,6 +63,9 @@ module mips_cpu_bus_generic_tb();
         end
 
         $display("output: %d", register_v0);
+        if(register_v0 != EXPECTED_REG_V0) begin
+            $fatal(2, "Expected %d for reg_v0, got: %d ", EXPECTED_REG_V0, register_v0);
+        end
         $finish;
     end
 
