@@ -3,10 +3,6 @@
 // i3
 // Fetch, Decode, execute, memory_access, WB
 
-typedef enum logic[5:0] {
-    FUNCT_ADDU = 6'b10_0001
-} funct_t;
-
 module mips_cpu_bus(
     /* Standard signals */
     input logic clk,
