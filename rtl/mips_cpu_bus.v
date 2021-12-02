@@ -5,7 +5,8 @@
 
 typedef enum logic[5:0] {
     FUNCT_ADDU = 6'b10_0001,
-    FUNCT_JR   = 6'b00_1000
+    FUNCT_JR   = 6'b00_1000,
+    FUNCT_ADDIU = 6'b001001
 } funct_t;
 
 module mips_cpu_bus(
@@ -77,7 +78,7 @@ module mips_cpu_bus(
     /* itype instructions */
     logic[4:0] itype_rs;
     logic[4:0] itype_rt;
-    logic[15:0] itype_immediate;
+    logic[31:0] itype_immediate;
 
     /* jtype_instructions */
     logic[25:0] jtype_address;
@@ -94,10 +95,13 @@ module mips_cpu_bus(
     /* itype */
     assign itype_rs        = effective_ir[25:21];
     assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = effective_ir[15:0];
+    assign itype_immediate = {16'b0 , effective_ir[15:0]};
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
+
+    /* 2nd input to ALU*/
+    logic[31:0] b;
     
 
     /* iverilog won't allow always_comb when selecting bits with [] */
@@ -113,7 +117,6 @@ module mips_cpu_bus(
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
         effective_ir = state == STATE_EXECUTE ? readdata : ir;
-
        
         if(opcode == OPCODE_RTYPE) begin 
             instr_type = RTYPE;
@@ -130,6 +133,7 @@ module mips_cpu_bus(
         end
         else begin
             instr_type = ITYPE;
+
         end
 
         /* Fetch */
@@ -141,6 +145,8 @@ module mips_cpu_bus(
             read = 0; 
             // address needs to be set.
         end
+
+        b = (ITYPE ? itype_immediate : rt_val);
     end
 
     always @(posedge clk) begin
@@ -201,6 +207,7 @@ module mips_cpu_bus(
                       .b(rt_val),
                       .register_v0(register_v0)
     );
-    alu alu(.a(rs_val), .b(rt_val), .fncode(fncode), .r(alu_out));
+
+    alu alu(.a(rs_val), .b(b), .fncode(fncode), .r(alu_out));
     
 endmodule
