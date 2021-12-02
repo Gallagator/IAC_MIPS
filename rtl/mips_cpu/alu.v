@@ -7,7 +7,7 @@ module alu(
     always_comb begin
         case(fncode) 
             FUNCT_ADDU : r = a + b;
-            FUNCT_ADDUI : r = a + b;
+            FUNCT_ADDIU : r = a + b;
             default : r = 0;
         endcase
     end
