@@ -33,7 +33,12 @@ module reg_file(
             $display("write into register %d, %d", write_addr, data_in);
 
 
-            regs[write_addr - 1] <= data_in;
+            regs[write_addr] <= data_in;
+
+            /* Why was it regs[write_addr - 1] ?*/
+
+            $display("regs[]", regs[write_addr]);       
+
         end 
     end
 
