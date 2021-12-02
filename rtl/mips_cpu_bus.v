@@ -5,8 +5,7 @@
 
 typedef enum logic[5:0] {
     FUNCT_ADDU = 6'b10_0001,
-    FUNCT_JR   = 6'b00_1000,
-    FUNCT_ADDIU = 6'b001001
+    FUNCT_JR   = 6'b00_1000
 } funct_t;
 
 module mips_cpu_bus(
@@ -35,11 +34,12 @@ module mips_cpu_bus(
     typedef enum logic[5:0] {
         OPCODE_RTYPE = 6'b00_0000,
         OPCODE_JAL   = 6'b00_0011,
-        OPCODE_J     = 6'b00_0010
+        OPCODE_J     = 6'b00_0010,
+        OPCODE_ADDIU = 6'b001001
     } opcode_t;
     
     typedef enum logic[1:0] {
-        RTYPE,
+        RTYPE ,
         ITYPE,
         JTYPE
     } instr_type_t;
@@ -102,6 +102,7 @@ module mips_cpu_bus(
 
     /* 2nd input to ALU*/
     logic[31:0] b;
+    logic[4:0] write_reg;
     
 
     /* iverilog won't allow always_comb when selecting bits with [] */
@@ -134,6 +135,11 @@ module mips_cpu_bus(
         else begin
             instr_type = ITYPE;
 
+            reg_file_rs = rtype_rs;
+            reg_file_rt = rtype_rt;
+            reg_file_rd = rtype_rd;
+            reg_file_write = state == STATE_EXECUTE;
+            reg_file_data_in = alu_out;
         end
 
         /* Fetch */
@@ -146,7 +152,15 @@ module mips_cpu_bus(
             // address needs to be set.
         end
 
-        b = (ITYPE ? itype_immediate : rt_val);
+        b = (instr_type == ITYPE) ? itype_immediate : rt_val;
+        write_reg = (instr_type == ITYPE) ? rt_val : reg_file_rd;
+    end
+
+    always_comb begin
+        if(opcode == OPCODE_ADDIU )begin
+            /* We are performing an addition, therefore:*/
+            fncode = FUNCT_ADDU; 
+        end
     end
 
     always @(posedge clk) begin
@@ -168,6 +182,10 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
+                    $display("a=", rs_val);
+                    $display("b=", b);
+                    $display("alu out=", alu_out);
+                    $display("write reg=", write_reg);
                     ir <= readdata;
                     case(instr_type) 
                         RTYPE : begin
@@ -200,7 +218,7 @@ module mips_cpu_bus(
                       .reset(reset), 
                       .addr_a(reg_file_rs),
                       .addr_b(reg_file_rt),
-                      .write_addr(reg_file_rd),
+                      .write_addr(write_reg),
                       .write(reg_file_write),
                       .data_in(reg_file_data_in),
                       .a(rs_val),
@@ -209,5 +227,5 @@ module mips_cpu_bus(
     );
 
     alu alu(.a(rs_val), .b(b), .fncode(fncode), .r(alu_out));
-    
+
 endmodule
