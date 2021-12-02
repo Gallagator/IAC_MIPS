@@ -37,68 +37,73 @@ module mips_cpu_bus(
         OPCODE_J     = 6'b00_0010
     } opcode_t;
     
-    typedef struct packed {
-        logic[5:0] opcode;
-        logic[4:0] rs;
-        logic[4:0] rt;
-        logic[4:0] rd;
-        logic[4:0] shamnt;
-        logic[5:0] fncode;
-    } rtype_t;
-    
-    typedef struct packed {
-        logic[5:0] opcode;
-        logic[4:0] rs;
-        logic[4:0] rt;
-        logic[15:0] immediate;
-    } itype_t;
-    
-    typedef struct packed {
-        logic[5:0] opcode;
-        logic[25:0] address;
-    } jtype_t;
-    
     typedef enum logic[1:0] {
         RTYPE,
         ITYPE,
         JTYPE
     } instr_type_t;
 
-    /* Represents an instruction selected by instr_type */    
-    typedef struct packed{
-        instr_type_t instr_type;
-        union packed{
-            rtype_t rtype;     
-            itype_t itype;     
-            jtype_t jtype;     
-        } instruction;
-    } instruction_t;
-
     /* Program Counter, instruction register, state */
-    logic[31: 0] pc/*, pc_next*/;
+    logic[31: 0] pc /*, pc_next*/;
     /* TODO REMEMBER TO SET IR_NEXT, AND EFFECTIVE_IR TO THE CORRECT INSTR! */ 
     logic[31: 0] ir/*, ir_next */, effective_ir;
-    logic[5:0] opcode;
-    instruction_t instr;
     state_t state;
 
     /* Register file outputs */  
     logic[31:0] rs_val, rt_val;
 
+    /* Reg file inputs */
     logic reg_file_write;
     logic[31:0] reg_file_data_in;
     logic[4:0] reg_file_rs;
     logic[4:0] reg_file_rt;
     logic[4:0] reg_file_rd;
 
-
+    /* ALU */
     logic[31:0] alu_out;
     logic[5:0] fncode;
 
+    /* Instruction decode */
+    logic[2:0] instr_type;
+    logic[5:0] opcode;
+
+    /* rtype instructions */
+    logic[4:0] rtype_rs;
+    logic[4:0] rtype_rt;
+    logic[4:0] rtype_rd;
+    logic[4:0] rtype_shamnt;
+    logic[5:0] rtype_fncode;
+
+    /* itype instructions */
+    logic[4:0] itype_rs;
+    logic[4:0] itype_rt;
+    logic[15:0] itype_immediate;
+
+    /* jtype_instructions */
+    logic[25:0] jtype_address;
+
+    assign opcode = effective_ir[31:26];
+
+    /* rtype */
+    assign rtype_rs     = effective_ir[25:21];
+    assign rtype_rt     = effective_ir[20:16];
+    assign rtype_rd     = effective_ir[15:11];
+    assign rtype_shamnt = effective_ir[10:6];
+    assign rtype_fncode = effective_ir[5:0];
+
+    /* itype */
+    assign itype_rs        = effective_ir[25:21];
+    assign itype_rt        = effective_ir[20:16];
+    assign itype_immediate = effective_ir[15:0];
+
+    /* jtype */
+    assign jtype_address = effective_ir[25:0];
+    
+
     /* iverilog won't allow always_comb when selecting bits with [] */
-    always @(*) begin
+    always_comb begin
         
-        /* To be assigned more carefully: */
+        /* TODO assign more carefully: */
         write = 0;
         writedata = 0;
         byteenable = 0;
@@ -109,34 +114,22 @@ module mips_cpu_bus(
         /* Grabs the instruction that has just been fetched. */
         effective_ir = state == STATE_EXECUTE ? readdata : ir;
 
-        opcode = effective_ir[31:26];
+       
         if(opcode == OPCODE_RTYPE) begin 
-            instr.instr_type = RTYPE;
-            instr.instruction.rtype.opcode = opcode;
-            instr.instruction.rtype.rs = effective_ir[25:21];
-            instr.instruction.rtype.rt = effective_ir[20:16];
-            instr.instruction.rtype.rd = effective_ir[15:11];
-            instr.instruction.rtype.shamnt = effective_ir[10:6];
-            instr.instruction.rtype.fncode = effective_ir[5:0];
+            instr_type = RTYPE;
 
-            reg_file_rs = instr.instruction.rtype.rs;
-            reg_file_rt = instr.instruction.rtype.rt;
-            reg_file_rd = instr.instruction.rtype.rd;
+            reg_file_rs = rtype_rs;
+            reg_file_rt = rtype_rt;
+            reg_file_rd = rtype_rd;
             reg_file_write = state == STATE_EXECUTE;
             reg_file_data_in = alu_out;
-            fncode = instr.instruction.rtype.fncode;
+            fncode = rtype_fncode;
         end
         else if(opcode == OPCODE_J || opcode == OPCODE_JAL) begin
-            instr.instr_type = JTYPE;
-            instr.instruction.jtype.opcode = opcode;
-            instr.instruction.jtype.address = effective_ir[25:0];
+            instr_type = JTYPE;
         end
         else begin
-            instr.instr_type = ITYPE;
-            instr.instruction.itype.opcode    = opcode;
-            instr.instruction.itype.rs        = effective_ir[25:21];
-            instr.instruction.itype.rt        = effective_ir[20:16];
-            instr.instruction.itype.immediate = effective_ir[15:0];
+            instr_type = ITYPE;
         end
 
         /* Fetch */
@@ -170,10 +163,10 @@ module mips_cpu_bus(
                 STATE_EXECUTE : begin
                     $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
                     ir <= readdata;
-                    case(instr.instr_type) 
+                    case(instr_type) 
                         RTYPE : begin
-                            if(instr.instruction.rtype.fncode == FUNCT_JR) begin
-                                pc <= instr.instruction.rtype.rs;
+                            if(rtype_fncode == FUNCT_JR) begin
+                                pc <= rtype_rs;
                             end
                         end 
                         ITYPE : begin
