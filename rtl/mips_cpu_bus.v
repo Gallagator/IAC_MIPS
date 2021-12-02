@@ -153,7 +153,7 @@ module mips_cpu_bus(
         end
 
         b = (instr_type == ITYPE) ? itype_immediate : rt_val;
-        write_reg = (instr_type == ITYPE) ? rt_val : reg_file_rd;
+        write_reg = (instr_type == ITYPE) ? itype_rt : reg_file_rd;
     end
 
     always_comb begin
@@ -185,7 +185,10 @@ module mips_cpu_bus(
                     $display("a=", rs_val);
                     $display("b=", b);
                     $display("alu out=", alu_out);
-                    $display("write reg=", write_reg);
+                    $display("write addr", write_reg);
+                    $display("write_enable", reg_file_write);
+                    $display("data in", reg_file_data_in);
+
                     ir <= readdata;
                     case(instr_type) 
                         RTYPE : begin
