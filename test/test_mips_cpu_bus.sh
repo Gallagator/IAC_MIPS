@@ -2,6 +2,9 @@
 
 TESTCASES="machine_code/*.hex.txt"
 
+mkdir -p output
+mkdir -p simulator
+
 # Loop over every file matching the TESTCASES pattern
 for i in ${TESTCASES} ; do
     # Extract just the testcase name from the filename. See `man basename` for what this command does.
