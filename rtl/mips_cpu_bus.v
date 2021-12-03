@@ -64,7 +64,7 @@ module mips_cpu_bus(
 
     /* ALU */
     logic[31:0] alu_out;
-    logic[5:0] fncode;
+    logic[5:0] alu_fncode;
     logic[31:0] alu_b;
 
     /* Instruction decode */
@@ -124,7 +124,6 @@ module mips_cpu_bus(
             reg_file_rd = rtype_rd;
             reg_file_write = state == STATE_EXECUTE;
             reg_file_data_in = alu_out;
-            fncode = rtype_fncode;
             alu_b = rt_val;
         end
         else if(opcode == OPCODE_J || opcode == OPCODE_JAL) begin
@@ -200,7 +199,8 @@ module mips_cpu_bus(
     end
 
     alu_ctrl alu_ctrl(.opcode(opcode),
-                      .fncode(fncode)
+                      .rtype_fncode(rtype_fncode),
+                      .fncode(alu_fncode)
     );
 
     reg_file reg_file(.clk(clk), 
@@ -215,6 +215,6 @@ module mips_cpu_bus(
                       .register_v0(register_v0)
     );
 
-    alu alu(.a(rs_val), .b(alu_b), .fncode(fncode), .r(alu_out));
+    alu alu(.a(rs_val), .b(alu_b), .fncode(alu_fncode), .r(alu_out));
 
 endmodule
