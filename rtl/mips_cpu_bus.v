@@ -8,6 +8,26 @@ typedef enum logic[5:0] {
     FUNCT_JR   = 6'b00_1000
 } funct_t;
 
+typedef enum logic[2:0] {
+    STATE_FETCH = 0,
+    STATE_EXECUTE = 1,
+    STATE_MEMORY = 2,
+    STATE_WRITEBACK = 3
+} state_t;
+
+typedef enum logic[5:0] {
+    OPCODE_RTYPE = 6'b00_0000,
+    OPCODE_JAL   = 6'b00_0011,
+    OPCODE_J     = 6'b00_0010,
+    OPCODE_ADDIU = 6'b00_1001
+} opcode_t;
+    
+typedef enum logic[1:0] {
+    RTYPE,
+    ITYPE,
+    JTYPE
+} instr_type_t;
+
 module mips_cpu_bus(
     /* Standard signals */
     input logic clk,
@@ -24,25 +44,7 @@ module mips_cpu_bus(
     output logic[3:0] byteenable,
     input logic[31:0] readdata
 );
-    typedef enum logic[2:0] {
-        STATE_FETCH = 0,
-        STATE_EXECUTE = 1,
-        STATE_MEMORY = 2,
-        STATE_WRITEBACK = 3
-    } state_t;
 
-    typedef enum logic[5:0] {
-        OPCODE_RTYPE = 6'b00_0000,
-        OPCODE_JAL   = 6'b00_0011,
-        OPCODE_J     = 6'b00_0010,
-        OPCODE_ADDIU = 6'b00_1001
-    } opcode_t;
-    
-    typedef enum logic[1:0] {
-        RTYPE,
-        ITYPE,
-        JTYPE
-    } instr_type_t;
 
     /* Program Counter, instruction register, state */
     logic[31: 0] pc /*, pc_next*/;
@@ -117,7 +119,6 @@ module mips_cpu_bus(
        
         if(opcode == OPCODE_RTYPE) begin 
             instr_type = RTYPE;
-
             reg_file_rs = rtype_rs;
             reg_file_rt = rtype_rt;
             reg_file_rd = rtype_rd;
@@ -137,7 +138,6 @@ module mips_cpu_bus(
             reg_file_write = state == STATE_EXECUTE;
             reg_file_data_in = alu_out;
             alu_b = itype_immediate;
-            fncode = FUNCT_ADDU;
         end
 
         /* Fetch */
@@ -198,6 +198,10 @@ module mips_cpu_bus(
             endcase
         end
     end
+
+    alu_ctrl alu_ctrl(.opcode(opcode),
+                      .fncode(fncode)
+    );
 
     reg_file reg_file(.clk(clk), 
                       .reset(reset), 
