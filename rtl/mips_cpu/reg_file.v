@@ -30,15 +30,7 @@ module reg_file(
             end
         end 
         else if(!reset && write && write_addr != 0) begin
-            $display("write into register %d, %d", write_addr, data_in);
-
-
-            regs[write_addr] <= data_in;
-
-            /* Why was it regs[write_addr - 1] ?*/
-
-            $display("regs[]", regs[write_addr]);       
-
+            regs[write_addr - 1] <= data_in;
         end 
     end
 

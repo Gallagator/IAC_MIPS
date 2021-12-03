@@ -182,12 +182,6 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
-                    $display("a=", rs_val);
-                    $display("b=", b);
-                    $display("alu out=", alu_out);
-                    $display("write addr", write_reg);
-                    $display("write_enable", reg_file_write);
-                    $display("data in", reg_file_data_in);
 
                     ir <= readdata;
                     case(instr_type) 

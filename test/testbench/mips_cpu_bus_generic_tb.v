@@ -42,7 +42,7 @@ module mips_cpu_bus_generic_tb();
         #5;
         clk = !clk;
         reset = 0;
-        repeat(5) begin
+        repeat(TIMEOUT_CYCLES) begin
             #5;
             clk = !clk;
             #5;
