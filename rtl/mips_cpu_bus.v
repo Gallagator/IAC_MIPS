@@ -35,11 +35,11 @@ module mips_cpu_bus(
         OPCODE_RTYPE = 6'b00_0000,
         OPCODE_JAL   = 6'b00_0011,
         OPCODE_J     = 6'b00_0010,
-        OPCODE_ADDIU = 6'b001001
+        OPCODE_ADDIU = 6'b00_1001
     } opcode_t;
     
     typedef enum logic[1:0] {
-        RTYPE ,
+        RTYPE,
         ITYPE,
         JTYPE
     } instr_type_t;
@@ -63,6 +63,7 @@ module mips_cpu_bus(
     /* ALU */
     logic[31:0] alu_out;
     logic[5:0] fncode;
+    logic[31:0] alu_b;
 
     /* Instruction decode */
     logic[2:0] instr_type;
@@ -100,11 +101,6 @@ module mips_cpu_bus(
     /* jtype */
     assign jtype_address = effective_ir[25:0];
 
-    /* 2nd input to ALU*/
-    logic[31:0] b;
-    logic[4:0] write_reg;
-    
-
     /* iverilog won't allow always_comb when selecting bits with [] */
     always_comb begin
         
@@ -128,6 +124,7 @@ module mips_cpu_bus(
             reg_file_write = state == STATE_EXECUTE;
             reg_file_data_in = alu_out;
             fncode = rtype_fncode;
+            alu_b = rt_val;
         end
         else if(opcode == OPCODE_J || opcode == OPCODE_JAL) begin
             instr_type = JTYPE;
@@ -135,11 +132,12 @@ module mips_cpu_bus(
         else begin
             instr_type = ITYPE;
 
-            reg_file_rs = rtype_rs;
-            reg_file_rt = rtype_rt;
-            reg_file_rd = rtype_rd;
+            reg_file_rs = itype_rs;
+            reg_file_rd = itype_rt;
             reg_file_write = state == STATE_EXECUTE;
             reg_file_data_in = alu_out;
+            alu_b = itype_immediate;
+            fncode = FUNCT_ADDU;
         end
 
         /* Fetch */
@@ -150,16 +148,6 @@ module mips_cpu_bus(
         else begin
             read = 0; 
             // address needs to be set.
-        end
-
-        b = (instr_type == ITYPE) ? itype_immediate : rt_val;
-        write_reg = (instr_type == ITYPE) ? itype_rt : reg_file_rd;
-    end
-
-    always_comb begin
-        if(opcode == OPCODE_ADDIU )begin
-            /* We are performing an addition, therefore:*/
-            fncode = FUNCT_ADDU; 
         end
     end
 
@@ -182,12 +170,6 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
-                    $display("a=", rs_val);
-                    $display("b=", b);
-                    $display("alu out=", alu_out);
-                    $display("write addr", write_reg);
-                    $display("write_enable", reg_file_write);
-                    $display("data in", reg_file_data_in);
 
                     ir <= readdata;
                     case(instr_type) 
@@ -221,7 +203,7 @@ module mips_cpu_bus(
                       .reset(reset), 
                       .addr_a(reg_file_rs),
                       .addr_b(reg_file_rt),
-                      .write_addr(write_reg),
+                      .write_addr(reg_file_rd),
                       .write(reg_file_write),
                       .data_in(reg_file_data_in),
                       .a(rs_val),
@@ -229,6 +211,6 @@ module mips_cpu_bus(
                       .register_v0(register_v0)
     );
 
-    alu alu(.a(rs_val), .b(b), .fncode(fncode), .r(alu_out));
+    alu alu(.a(rs_val), .b(alu_b), .fncode(fncode), .r(alu_out));
 
 endmodule
