@@ -30,7 +30,7 @@ module reg_file(
             end
         end 
         else if(!reset && write && write_addr != 0) begin
-            regs[write_addr - 1] <= data_in;
+            regs[write_addr - 1] <= data_in;     
         end 
     end
 

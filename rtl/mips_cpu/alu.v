@@ -4,10 +4,12 @@ module alu(
     input funct_t fncode,
     output logic[31:0] r
 );
+
     always_comb begin
         case(fncode) 
             FUNCT_ADDU : r = a + b;
             default : r = 0;
         endcase
     end
+
 endmodule

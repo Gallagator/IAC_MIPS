@@ -8,6 +8,26 @@ typedef enum logic[5:0] {
     FUNCT_JR   = 6'b00_1000
 } funct_t;
 
+typedef enum logic[2:0] {
+    STATE_FETCH = 0,
+    STATE_EXECUTE = 1,
+    STATE_MEMORY = 2,
+    STATE_WRITEBACK = 3
+} state_t;
+
+typedef enum logic[5:0] {
+    OPCODE_RTYPE = 6'b00_0000,
+    OPCODE_JAL   = 6'b00_0011,
+    OPCODE_J     = 6'b00_0010,
+    OPCODE_ADDIU = 6'b00_1001
+} opcode_t;
+    
+typedef enum logic[1:0] {
+    RTYPE,
+    ITYPE,
+    JTYPE
+} instr_type_t;
+
 module mips_cpu_bus(
     /* Standard signals */
     input logic clk,
@@ -24,24 +44,7 @@ module mips_cpu_bus(
     output logic[3:0] byteenable,
     input logic[31:0] readdata
 );
-    typedef enum logic[2:0] {
-        STATE_FETCH = 0,
-        STATE_EXECUTE = 1,
-        STATE_MEMORY = 2,
-        STATE_WRITEBACK = 3
-    } state_t;
 
-    typedef enum logic[5:0] {
-        OPCODE_RTYPE = 6'b00_0000,
-        OPCODE_JAL   = 6'b00_0011,
-        OPCODE_J     = 6'b00_0010
-    } opcode_t;
-    
-    typedef enum logic[1:0] {
-        RTYPE,
-        ITYPE,
-        JTYPE
-    } instr_type_t;
 
     /* Program Counter, instruction register, state */
     logic[31: 0] pc /*, pc_next*/;
@@ -61,7 +64,8 @@ module mips_cpu_bus(
 
     /* ALU */
     logic[31:0] alu_out;
-    logic[5:0] fncode;
+    logic[5:0] alu_fncode;
+    logic[31:0] alu_b;
 
     /* Instruction decode */
     logic[2:0] instr_type;
@@ -77,7 +81,7 @@ module mips_cpu_bus(
     /* itype instructions */
     logic[4:0] itype_rs;
     logic[4:0] itype_rt;
-    logic[15:0] itype_immediate;
+    logic[31:0] itype_immediate;
 
     /* jtype_instructions */
     logic[25:0] jtype_address;
@@ -94,11 +98,10 @@ module mips_cpu_bus(
     /* itype */
     assign itype_rs        = effective_ir[25:21];
     assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = effective_ir[15:0];
+    assign itype_immediate = {16'b0 , effective_ir[15:0]};
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
-    
 
     /* iverilog won't allow always_comb when selecting bits with [] */
     always_comb begin
@@ -113,23 +116,27 @@ module mips_cpu_bus(
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
         effective_ir = state == STATE_EXECUTE ? readdata : ir;
-
        
         if(opcode == OPCODE_RTYPE) begin 
             instr_type = RTYPE;
-
             reg_file_rs = rtype_rs;
             reg_file_rt = rtype_rt;
             reg_file_rd = rtype_rd;
             reg_file_write = state == STATE_EXECUTE;
             reg_file_data_in = alu_out;
-            fncode = rtype_fncode;
+            alu_b = rt_val;
         end
         else if(opcode == OPCODE_J || opcode == OPCODE_JAL) begin
             instr_type = JTYPE;
         end
         else begin
             instr_type = ITYPE;
+
+            reg_file_rs = itype_rs;
+            reg_file_rd = itype_rt;
+            reg_file_write = state == STATE_EXECUTE;
+            reg_file_data_in = alu_out;
+            alu_b = itype_immediate;
         end
 
         /* Fetch */
@@ -162,6 +169,7 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
+
                     ir <= readdata;
                     case(instr_type) 
                         RTYPE : begin
@@ -190,6 +198,11 @@ module mips_cpu_bus(
         end
     end
 
+    alu_ctrl alu_ctrl(.opcode(opcode),
+                      .rtype_fncode(rtype_fncode),
+                      .fncode(alu_fncode)
+    );
+
     reg_file reg_file(.clk(clk), 
                       .reset(reset), 
                       .addr_a(reg_file_rs),
@@ -201,6 +214,7 @@ module mips_cpu_bus(
                       .b(rt_val),
                       .register_v0(register_v0)
     );
-    alu alu(.a(rs_val), .b(rt_val), .fncode(fncode), .r(alu_out));
-    
+
+    alu alu(.a(rs_val), .b(alu_b), .fncode(alu_fncode), .r(alu_out));
+
 endmodule
