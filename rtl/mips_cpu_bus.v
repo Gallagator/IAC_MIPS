@@ -100,7 +100,7 @@ module mips_cpu_bus(
     /* itype */
     assign itype_rs        = effective_ir[25:21];
     assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = {16'b0, effective_ir[15:0]}; /*Deliberately swapped for testing*/
+    assign itype_immediate = {effective_ir[15:0], 16'b0}; /*Deliberately swapped for testing*/
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
@@ -135,9 +135,12 @@ module mips_cpu_bus(
             instr_type = ITYPE;
             reg_file_rs = itype_rs;
             reg_file_rd = itype_rt;
-            reg_file_write = state == STATE_EXECUTE; /*why only state EXECUTE, write shouldnt be enabled in state MEM?*/
-            reg_file_data_in = alu_out;
+            reg_file_write = ((state == STATE_EXECUTE) || ((state == STATE_MEMORY) || (state == STATE_WRITEBACK))) ; /*why only state EXECUTE, write shouldnt be enabled in state MEM?*/
+            //alu_out overwrote readdata for LW
             alu_b = itype_immediate;
+            if (opcode!=OPCODE_LW) begin
+                reg_file_data_in = alu_out;
+            end
         end
 
         /* Fetch */
@@ -192,8 +195,9 @@ module mips_cpu_bus(
                                     read <= 1; /*check if need to put in MEM STATE*/
                                     byteenable <= 4'b1111;
                                     address <= alu_out;
-                                    state <= 3; /*Consider this*/
+                                    state <= STATE_MEMORY; /*Consider this*/
                                 end
+                                
                                 OPCODE_ADDIU : begin
                                     state <= STATE_FETCH;
                                 end
@@ -209,15 +213,13 @@ module mips_cpu_bus(
                     
                 end
                 STATE_MEMORY : begin
-                                    
-                end
-                STATE_WRITEBACK : begin
                     reg_file_data_in <= readdata;
                     reg_file_write <= 1;
+                    state <= STATE_WRITEBACK;
+                end
+
+                STATE_WRITEBACK : begin
                     /* reg_file_rd = itype_rt; already assigned*/
-                    $display("regfiledatain= %d , reg_file_write= %d, reg_file_rd", reg_file_data_in, reg_file_write, reg_file_rd);
-
-
                     state <= STATE_FETCH;
                 end
                 default : ;
