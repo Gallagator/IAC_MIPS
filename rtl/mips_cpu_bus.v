@@ -100,7 +100,7 @@ module mips_cpu_bus(
     /* itype */
     assign itype_rs        = effective_ir[25:21];
     assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = {effective_ir[15:0], 16'b0}; /*Deliberately swapped for testing*/
+    assign itype_immediate = {16'b0, effective_ir[15:0]}; /*Deliberately swapped for testing*/
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
@@ -109,9 +109,6 @@ module mips_cpu_bus(
     always_comb begin
         
         /* TODO assign more carefully: */
-        
-
-
         write = 0;
         writedata = 0;
         byteenable = 0;
@@ -184,9 +181,9 @@ module mips_cpu_bus(
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
-                                pc <= rtype_rs;
-                                state <= STATE_FETCH;
+                                pc <= rtype_rs;                       
                             end
+                            state <= STATE_FETCH;
                         end 
                         ITYPE : begin
                             case(opcode)
