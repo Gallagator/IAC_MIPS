@@ -8,7 +8,7 @@ typedef enum logic[5:0] {
     FUNCT_JR   = 6'b00_1000
 } funct_t;
 
-typedef enum logic[2:0] {
+typedef enum logic[1:0] {    /*3 bits for this?*/
     STATE_FETCH = 0,
     STATE_EXECUTE = 1,
     STATE_MEMORY = 2,
@@ -185,11 +185,14 @@ module mips_cpu_bus(
                         ITYPE : begin
                             case(opcode)
                                 OPCODE_LW : begin
-                                write <= 0;
-                                read <= 1; /*check if need to put in MEM STATE*/
-                                byteenable <= 4b'1111;
-                                address <= alu_out;
-                                state <= STATE_WRITEBACK; /*Consider this*/
+                                    $display("in lw block");
+                                    write <= 0;
+                                    read <= 1; /*check if need to put in MEM STATE*/
+                                    byteenable <= 4'b1111;
+                                    address <= alu_out;
+                                    $display("STATE_WRITEBACK", STATE_WRITEBACK);
+                                    state <= STATE_WRITEBACK; /*Consider this*/
+                                    $display("state1=", state);
                                 end
                                 OPCODE_ADDIU : begin
                                     state <= STATE_FETCH;
@@ -203,6 +206,7 @@ module mips_cpu_bus(
                         default : ;
                     endcase
 
+                    $display("2=", state);
                     
                 end
                 STATE_MEMORY : begin
@@ -212,6 +216,7 @@ module mips_cpu_bus(
                     reg_file_data_in <= readdata;
                     reg_file_write <= 1;
                     /* reg_file_rd = itype_rt; already assigned*/
+                    $display("readdata=", readdata);
                 
 
                     state <= STATE_FETCH;
