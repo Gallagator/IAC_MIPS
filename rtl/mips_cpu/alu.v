@@ -8,6 +8,9 @@ module alu(
     always_comb begin
         case(fncode) 
             FUNCT_ADDU : r = a + b;
+            FUNCT_AND  : r = a & b;
+            FUNCT_OR   : r = a | b;
+            FUNCT_XOR  : r = a ^ b;
             default : r = 0;
         endcase
     end
