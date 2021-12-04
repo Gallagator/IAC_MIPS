@@ -148,10 +148,16 @@ module mips_cpu_bus(
             address = pc;
             read = 1;
         end
-        else begin
-            read = 0; 
-            // address needs to be set.
+        else if(state == STATE_EXECUTE && opcode == OPCODE_LW) begin
+            read = 1; 
         end
+        else begin
+            read = 0;
+        end
+        
+            // address needs to be set.
+
+
     end
 
     always @(posedge clk) begin
@@ -185,14 +191,11 @@ module mips_cpu_bus(
                         ITYPE : begin
                             case(opcode)
                                 OPCODE_LW : begin
-                                    $display("in lw block");
                                     write <= 0;
                                     read <= 1; /*check if need to put in MEM STATE*/
                                     byteenable <= 4'b1111;
                                     address <= alu_out;
-                                    $display("STATE_WRITEBACK", STATE_WRITEBACK);
-                                    state <= STATE_WRITEBACK; /*Consider this*/
-                                    $display("state1=", state);
+                                    state <= 3; /*Consider this*/
                                 end
                                 OPCODE_ADDIU : begin
                                     state <= STATE_FETCH;
@@ -206,7 +209,6 @@ module mips_cpu_bus(
                         default : ;
                     endcase
 
-                    $display("2=", state);
                     
                 end
                 STATE_MEMORY : begin
@@ -216,8 +218,8 @@ module mips_cpu_bus(
                     reg_file_data_in <= readdata;
                     reg_file_write <= 1;
                     /* reg_file_rd = itype_rt; already assigned*/
-                    $display("readdata=", readdata);
-                
+                    $display("regfiledatain= %d , reg_file_write= %d, reg_file_rd", reg_file_data_in, reg_file_write, reg_file_rd);
+
 
                     state <= STATE_FETCH;
                 end
