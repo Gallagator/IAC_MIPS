@@ -19,7 +19,9 @@ typedef enum logic[5:0] {
     OPCODE_RTYPE = 6'b00_0000,
     OPCODE_JAL   = 6'b00_0011,
     OPCODE_J     = 6'b00_0010,
-    OPCODE_ADDIU = 6'b00_1001
+    OPCODE_ADDIU = 6'b00_1001,
+    OPCODE_LW = 6'b10_0011,
+    OPCODE_SW = 6'b10_1011
 } opcode_t;
     
 typedef enum logic[1:0] {
@@ -98,7 +100,7 @@ module mips_cpu_bus(
     /* itype */
     assign itype_rs        = effective_ir[25:21];
     assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = {16'b0 , effective_ir[15:0]};
+    assign itype_immediate = {effective_ir[15:0], 16'b0}; /*Deliberately swapped for testing*/
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
@@ -107,6 +109,9 @@ module mips_cpu_bus(
     always_comb begin
         
         /* TODO assign more carefully: */
+        
+
+
         write = 0;
         writedata = 0;
         byteenable = 0;
@@ -131,10 +136,9 @@ module mips_cpu_bus(
         end
         else begin
             instr_type = ITYPE;
-
             reg_file_rs = itype_rs;
             reg_file_rd = itype_rt;
-            reg_file_write = state == STATE_EXECUTE;
+            reg_file_write = state == STATE_EXECUTE; /*why only state EXECUTE, write shouldnt be enabled in state MEM?*/
             reg_file_data_in = alu_out;
             alu_b = itype_immediate;
         end
@@ -175,9 +179,22 @@ module mips_cpu_bus(
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
                                 pc <= rtype_rs;
+                                state <= STATE_FETCH;
                             end
                         end 
                         ITYPE : begin
+                            case(opcode)
+                                OPCODE_LW : begin
+                                write <= 0;
+                                read <= 1; /*check if need to put in MEM STATE*/
+                                byteenable <= 4b'1111;
+                                address <= alu_out;
+                                state <= STATE_WRITEBACK; /*Consider this*/
+                                end
+                                OPCODE_ADDIU : begin
+                                    state <= STATE_FETCH;
+                                end
+                            endcase
 
                         end 
                         JTYPE : begin
@@ -185,12 +202,18 @@ module mips_cpu_bus(
                         end 
                         default : ;
                     endcase
-                    state <= STATE_FETCH;
+
+                    
                 end
                 STATE_MEMORY : begin
-                   
+                                    
                 end
                 STATE_WRITEBACK : begin
+                    reg_file_data_in <= readdata;
+                    reg_file_write <= 1;
+                    /* reg_file_rd = itype_rt; already assigned*/
+                
+
                     state <= STATE_FETCH;
                 end
                 default : ;

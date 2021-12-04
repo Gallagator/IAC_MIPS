@@ -8,6 +8,8 @@ module alu_ctrl(
         case(opcode)        
             OPCODE_ADDIU:
                 fncode = FUNCT_ADDU;
+            OPCODE_LW:
+                fncode = FUNCT_ADDU;
             OPCODE_RTYPE:
                 fncode = rtype_fncode;
             default:
