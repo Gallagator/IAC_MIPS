@@ -109,9 +109,12 @@ module mips_cpu_bus(
     always_comb begin
         
         /* TODO assign more carefully: */
-        write = 0;
-        writedata = 0;
-        byteenable = 0;
+
+        if (opcode != OPCODE_SW) begin
+            write = 0;
+            writedata = 0;
+            byteenable = 4'b1111;
+        end
 
         /* Set active signal */
         active = pc != 0;
@@ -168,6 +171,7 @@ module mips_cpu_bus(
         else if(active) begin
             case(state)  
                 STATE_FETCH : begin
+                    reg_file_write <= 0;
                     /* Won't exit the fetch state if bus isn't ready to be
                      * read from yet. Further, it won't do anything if 
                      * it's still waiting */ 
@@ -197,7 +201,14 @@ module mips_cpu_bus(
                                     address <= alu_out;
                                     state <= STATE_MEMORY; /*Consider this*/
                                 end
-                                
+                                OPCODE_SW : begin
+                                    write <= 0;
+                                    read <= 0;
+                                    byteenable <= 4'b1111;
+                                    address <= alu_out;
+                                    writedata <= rt_val;
+                                    state <= STATE_MEMORY;
+                                end
                                 OPCODE_ADDIU : begin
                                     state <= STATE_FETCH;
                                 end
@@ -213,13 +224,24 @@ module mips_cpu_bus(
                     
                 end
                 STATE_MEMORY : begin
-                    reg_file_data_in <= readdata;
-                    reg_file_write <= 1;
-                    state <= STATE_WRITEBACK;
+                    if (!waitrequest) begin
+                        case(opcode)
+                            OPCODE_LW : begin
+                                reg_file_data_in <= readdata;
+                                reg_file_write <= 1;
+                                state <= STATE_WRITEBACK;
+                            end
+                            OPCODE_SW : begin
+                                write <= 1;
+                                state <= STATE_FETCH;
+                            end
+                        endcase
+                    end
                 end
 
                 STATE_WRITEBACK : begin
                     /* reg_file_rd = itype_rt; already assigned*/
+                    /*Why is WRITEBACK needed?*/
                     state <= STATE_FETCH;
                 end
                 default : ;
