@@ -36,6 +36,7 @@ module mips_cpu_bus_generic_tb();
 
     initial begin
         waitrequest_cycles = $urandom % MAX_WAIT_REQUEST_CYCLES + 1;
+
         reset = 0;
         clk = 0;
         #5;
@@ -54,6 +55,7 @@ module mips_cpu_bus_generic_tb();
             else begin
                 waitrequest = 1;
             end
+
             #5;
             clk = !clk;
             #5;
