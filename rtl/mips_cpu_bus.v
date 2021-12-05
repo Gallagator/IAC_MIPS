@@ -179,7 +179,8 @@ module mips_cpu_bus(
                     if(!waitrequest) begin
                         pc <= pc + 4;
                         state <= STATE_EXECUTE;
-                        $display("state FETCH\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, readdata);
+                        $display("---------------------------------------------------------------------------------------");
+                        $display("\nstate FETCH\naddress: %x\nread: %d\neff_ir(readdata): %x\n", address, read, readdata);
                     end
                     
                 end
@@ -187,21 +188,21 @@ module mips_cpu_bus(
 
                     case(opcode)
                         OPCODE_RTYPE : begin
-                            $display("we are in R type");
+                            $display("R TYPE");
                         end
                         OPCODE_LW : begin
-                            $display("we are in LW");
+                            $display("LOAD WORD");
                         end
                         OPCODE_SW : begin
-                            $display("we are in SW");
+                            $display("STORE WORD");
                         end
                         OPCODE_ADDIU : begin
-                            $display("We are in ADDIU");
+                            $display("ADDIU");
                         end
                     endcase
 
-                    $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
-
+                    $display("state EXEC\naddress: %x\neff_ir: %x", address, effective_ir);
+                    
                     ir <= readdata;
                     case(instr_type) 
                         RTYPE : begin
@@ -216,7 +217,9 @@ module mips_cpu_bus(
                                     write <= 0;
                                     read <= 1; /*check if need to put in MEM STATE*/
                                     byteenable <= 4'b1111;
-                                    address <= alu_out;
+                                    address = alu_out;  // Changed this to a bloking assignment.
+                                    $display("Address: %x", address);
+                                    $display("Read: %x", read);
                                     state <= STATE_MEMORY; /*Consider this*/
                                 end
                                 OPCODE_SW : begin
@@ -224,7 +227,7 @@ module mips_cpu_bus(
                                     read <= 0;
                                     byteenable <= 4'b1111;
                                     address <= alu_out;
-                                    $display("alu out = ", alu_out);
+                                    
                                     writedata <= rt_val;
                                     state <= STATE_MEMORY;
                                 end
@@ -239,22 +242,24 @@ module mips_cpu_bus(
                         end 
                         default : ;
                     endcase
+                    
 
                     
                 end
                 STATE_MEMORY : begin
-                    $display("state MEM\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
-                    $display("write data %d, write %d ", writedata, write);
-                    $display("readdata ", readdata);
+                    $display("\nstate MEMORY\naddress: %x\nread: %d\neff_ir: %x", address, read, effective_ir);
+                    //$display("write data: %x\nwrite: %x", writedata, write);
+                    $display("readdata: %x", readdata);
                     if (!waitrequest) begin
                         case(opcode)
                             OPCODE_LW : begin
                                 reg_file_data_in <= readdata;
+                                $display("reg_file_data_in: %x", reg_file_data_in);
                                 reg_file_write <= 1;
                                 state <= STATE_WRITEBACK;
                             end
                             OPCODE_SW : begin
-                                //write <= 0;
+                                write <= 0;
                                 state <= STATE_FETCH;
                             end
                         endcase
@@ -262,8 +267,8 @@ module mips_cpu_bus(
                 end
 
                 STATE_WRITEBACK : begin
-                    $display("state WB\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
-                    $display("readdata2 ", readdata);
+                    $display("\nstate WRITEBACK\naddress:   %x\nread:       %d\neff_ir:     %x", address, read, effective_ir);
+                    $display("readdata:     %x", readdata);
                     /* reg_file_rd = itype_rt; already assigned*/
                     /*Why is WRITEBACK needed?*/
                     state <= STATE_FETCH;
