@@ -107,6 +107,7 @@ module mips_cpu_bus_generic_tb();
         .address(prog_addr),
         .read(prog_read),
         .write(prog_write),
+        .byteenable(byteenable),
         .writedata(writedata),
         .readdata(prog_read_data)
     );
@@ -116,6 +117,7 @@ module mips_cpu_bus_generic_tb();
         .address(stack_addr),
         .read(stack_read),
         .write(stack_write),
+        .byteenable(byteenable),
         .writedata(writedata),
         .readdata(stack_read_data)
     );  
