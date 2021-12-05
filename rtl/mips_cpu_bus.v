@@ -137,6 +137,7 @@ module mips_cpu_bus(
         else begin
             instr_type = ITYPE;
             reg_file_rs = itype_rs;
+            reg_file_rt = itype_rt;
             reg_file_rd = itype_rt;
             reg_file_write = ((state == STATE_EXECUTE) || ((state == STATE_MEMORY) || (state == STATE_WRITEBACK))) ; /*why only state EXECUTE, write shouldnt be enabled in state MEM?*/
             //alu_out overwrote readdata for LW
@@ -202,7 +203,7 @@ module mips_cpu_bus(
                                     state <= STATE_MEMORY; /*Consider this*/
                                 end
                                 OPCODE_SW : begin
-                                    write <= 0;
+                                    write <= 1;
                                     read <= 0;
                                     byteenable <= 4'b1111;
                                     address <= alu_out;
@@ -224,6 +225,9 @@ module mips_cpu_bus(
                     
                 end
                 STATE_MEMORY : begin
+                    $display("state MEM\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
+                    $display("write data %d, write %d ", writedata, write);
+                    $display("readdata ", readdata);
                     if (!waitrequest) begin
                         case(opcode)
                             OPCODE_LW : begin
@@ -232,7 +236,7 @@ module mips_cpu_bus(
                                 state <= STATE_WRITEBACK;
                             end
                             OPCODE_SW : begin
-                                write <= 1;
+                                write <= 0;
                                 state <= STATE_FETCH;
                             end
                         endcase
@@ -240,6 +244,8 @@ module mips_cpu_bus(
                 end
 
                 STATE_WRITEBACK : begin
+                    $display("state WB\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
+                    $display("readdata2 ", readdata);
                     /* reg_file_rd = itype_rt; already assigned*/
                     /*Why is WRITEBACK needed?*/
                     state <= STATE_FETCH;
