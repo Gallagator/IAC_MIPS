@@ -30,8 +30,11 @@ module mips_cpu_bus_generic_tb();
     logic stack_read;
     logic stack_write;
     logic[31:0] stack_read_data;
+    logic debug_flag;
+    logic print_mem_tb;
 
     initial begin
+        print_mem_tb = 0;
         reset = 0;
         clk = 0;
         #5;
@@ -66,21 +69,24 @@ module mips_cpu_bus_generic_tb();
         if(register_v0 != EXPECTED_REG_V0) begin
             $fatal(2, "Expected %d for reg_v0, got: %d ", EXPECTED_REG_V0, register_v0);
         end
+        print_mem_tb = 1;
         $finish;
     end
 
-    assign stack_addr = address[13:2];
+    assign stack_addr = address[11:0];  // Had to change this, because otherwise it was dividing the address by 4 and rounding down.
     assign prog_addr = address[13:2];
 
     always_comb begin
 
         // Is the address in the stack region.        
-        if(address < (4096 << 2)) begin
+        if(address < (4096)) begin  // Had to change this because we are not dividing by 4 anymore.
             stack_read = read;
             stack_write = write;
             readdata = stack_read_data;
+            debug_flag = 0;
         end
         else begin
+            debug_flag = 1;
             stack_read = 0;
             stack_write = 0;
             readdata = 0;
@@ -94,9 +100,16 @@ module mips_cpu_bus_generic_tb();
             readdata = prog_read_data;
         end 
         else begin
-            stack_read = 0;
-            stack_write = 0;
+            prog_read = 0;  // Changed this from stack_read to prog_read.
+            prog_write = 0; // Same for prog_write.
             readdata = 0;
+        end
+
+    end
+
+    always @(stack_read_data) begin // Debugging purposes.
+        if(address == 20) begin
+            $display("Testbench:    address: %x,    RAM readdata: %x", address, stack_read_data);
         end
 
     end
@@ -108,7 +121,8 @@ module mips_cpu_bus_generic_tb();
         .read(prog_read),
         .write(prog_write),
         .writedata(writedata),
-        .readdata(prog_read_data)
+        .readdata(prog_read_data),
+        .print_mem(0)
     );
     /* Addresses 0:4095 */
     RAM_32x4096 stack_region(
@@ -117,7 +131,8 @@ module mips_cpu_bus_generic_tb();
         .read(stack_read),
         .write(stack_write),
         .writedata(writedata),
-        .readdata(stack_read_data)
+        .readdata(stack_read_data),
+        .print_mem(print_mem_tb)
     );  
 
     mips_cpu_bus mips(.clk(clk), 
