@@ -4,6 +4,8 @@ TESTCASE="$1"
 EXPECTED=$(cat expected/${TESTCASE}.txt)
 >&2 echo "Testing with ${TESTCASE}"
 
+# Compile cpu along with testbench. Load the ram file and the expected result 
+# into the testbench.
 iverilog -Wall -g2012 \
     ../rtl/*.v ../rtl/mips_cpu/*.v testbench/*.v \
     -s mips_cpu_bus_generic_tb \
