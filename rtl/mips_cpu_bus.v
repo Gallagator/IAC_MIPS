@@ -243,7 +243,7 @@ module mips_cpu_bus(
                     
                 end
                 STATE_MEMORY : begin
-                    $display("state MEM\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
+                    $display("\n state MEM\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
                     $display("write data %d, write %d ", writedata, write);
                     $display("readdata ", readdata);
                     if (!waitrequest) begin
@@ -263,7 +263,6 @@ module mips_cpu_bus(
 
                 STATE_WRITEBACK : begin
                     $display("state WB\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
-                    $display("readdata2 ", readdata);
                     /* reg_file_rd = itype_rt; already assigned*/
                     /*Why is WRITEBACK needed?*/
                     state <= STATE_FETCH;
