@@ -181,8 +181,25 @@ module mips_cpu_bus(
                         state <= STATE_EXECUTE;
                         $display("state FETCH\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, readdata);
                     end
+                    
                 end
                 STATE_EXECUTE : begin
+
+                    case(opcode)
+                        OPCODE_RTYPE : begin
+                            $display("we are in R type");
+                        end
+                        OPCODE_LW : begin
+                            $display("we are in LW");
+                        end
+                        OPCODE_SW : begin
+                            $display("we are in SW");
+                        end
+                        OPCODE_ADDIU : begin
+                            $display("We are in ADDIU");
+                        end
+                    endcase
+
                     $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
 
                     ir <= readdata;
@@ -207,6 +224,7 @@ module mips_cpu_bus(
                                     read <= 0;
                                     byteenable <= 4'b1111;
                                     address <= alu_out;
+                                    $display("alu out = ", alu_out);
                                     writedata <= rt_val;
                                     state <= STATE_MEMORY;
                                 end
@@ -236,7 +254,7 @@ module mips_cpu_bus(
                                 state <= STATE_WRITEBACK;
                             end
                             OPCODE_SW : begin
-                                write <= 0;
+                                //write <= 0;
                                 state <= STATE_FETCH;
                             end
                         endcase

@@ -1,4 +1,3 @@
-24410005 //5 loaded in reg[1]
-AC010014 // reg[1] stored in MEM[20]
-8C020014 // MEM[20] loaded in reg[2]
+24410006
+AC010014
 00000008

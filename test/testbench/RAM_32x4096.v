@@ -25,8 +25,9 @@ module RAM_32x4096(
 
     /* Synchronous write path */
     always @(posedge clk) begin
-        $display("RAM write ", write);
+        $display("RAM write= %d, writedata= %d ", write, writedata);
         if (write) begin
+            $display("memory[%d] will be equal to %d", address, writedata);
             memory[address] <= writedata;
         end
         readdata <= memory[address]; // Read-after-write mode
