@@ -2,7 +2,8 @@ module mips_cpu_bus_generic_tb();
     parameter RAM_INIT_FILE = "";
     parameter EXPECTED_REG_V0 = -1213;
     parameter TIMEOUT_CYCLES = 50_000;
-
+    parameter MAX_WAIT_REQUEST_CYCLES = 10;
+    
     logic clk;
     logic reset;
 
@@ -31,7 +32,10 @@ module mips_cpu_bus_generic_tb();
     logic stack_write;
     logic[31:0] stack_read_data;
 
+    int waitrequest_cycles;
+
     initial begin
+        waitrequest_cycles = 0; 
         reset = 0;
         clk = 0;
         #5;
@@ -43,10 +47,20 @@ module mips_cpu_bus_generic_tb();
         clk = !clk;
         reset = 0;
         repeat(TIMEOUT_CYCLES) begin
+            if(waitrequest_cycles == 0) begin
+                waitrequest = 0;
+                waitrequest_cycles = $urandom % MAX_WAIT_REQUEST_CYCLES + 1;
+                $display("waitrequest_cycles: %d", waitrequest_cycles);
+            end
+            else begin
+                waitrequest = 1;
+            end
+
             #5;
             clk = !clk;
             #5;
             clk = !clk;
+            waitrequest_cycles -= 1;
         end    
         $display("output: %d", register_v0);
         $fatal(2, "Simulation timeout");
@@ -54,7 +68,6 @@ module mips_cpu_bus_generic_tb();
 
 
     initial begin
-        waitrequest = 0; // TODO make this periodic signal 
 
         @(negedge reset);
         @(posedge clk);
