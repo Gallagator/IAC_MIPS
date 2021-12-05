@@ -11,6 +11,7 @@ module alu(
             FUNCT_AND  : r = a & b;
             FUNCT_OR   : r = a | b;
             FUNCT_XOR  : r = a ^ b;
+            FUNCT_SUBU : r = a - b;
             default : r = 0;
         endcase
     end
