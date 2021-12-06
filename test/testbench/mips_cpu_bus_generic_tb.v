@@ -112,6 +112,14 @@ module mips_cpu_bus_generic_tb();
 
     end
 
+    always @(address) begin
+        $display("Testbench:    address: %x", address);
+    end
+
+    always @(readdata) begin
+        $display("Testbench:    readdata: %x", readdata);
+    end
+
     /* Addresses BASE_ADDRESS:BASE_ADDRESS+4095*/
     RAM_32x4096 #(RAM_INIT_FILE) program_region(
         .clk(clk),

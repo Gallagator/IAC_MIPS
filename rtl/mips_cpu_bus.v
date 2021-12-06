@@ -151,7 +151,9 @@ module mips_cpu_bus(
 
         /* Fetch */
         if(state == STATE_FETCH && !waitrequest) begin
+            
             address = pc;
+            $display("CPU address: %x", address);
             read = 1;
         end
         else if(state == STATE_EXECUTE && opcode == OPCODE_LW) begin
@@ -188,7 +190,6 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     $display("\n");
-                    $display("Opcode: %x", opcode);
                     case(opcode)
                         OPCODE_RTYPE : begin
                             $display("R TYPE");
@@ -202,6 +203,7 @@ module mips_cpu_bus(
                         OPCODE_ADDIU : begin
                             $display("ADDIU");
                         end
+                        default : $display("OPCODE NOT KNOWN");
                     endcase
 
                     $display("state EXEC\naddress: %x\neff_ir: %x", address, effective_ir);

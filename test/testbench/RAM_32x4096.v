@@ -53,6 +53,7 @@ module RAM_32x4096(
             memory[address] <= masked_writedata;
         end
         readdata <= readdata_toggled; // Read-after-write mode
+        //$display("RAM:  readdata: %x", readdata);
     end
 
     toggle_endeanness togglewrite(
