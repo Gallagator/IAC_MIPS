@@ -8,7 +8,7 @@ typedef enum logic[5:0] {
     FUNCT_JR   = 6'b00_1000
 } funct_t;
 
-typedef enum logic[2:0] {
+typedef enum logic[1:0] {    /*3 bits for this?*/
     STATE_FETCH = 0,
     STATE_EXECUTE = 1,
     STATE_MEMORY = 2,
@@ -19,7 +19,9 @@ typedef enum logic[5:0] {
     OPCODE_RTYPE = 6'b00_0000,
     OPCODE_JAL   = 6'b00_0011,
     OPCODE_J     = 6'b00_0010,
-    OPCODE_ADDIU = 6'b00_1001
+    OPCODE_ADDIU = 6'b00_1001,
+    OPCODE_LW = 6'b10_0011,
+    OPCODE_SW = 6'b10_1011
 } opcode_t;
     
 typedef enum logic[1:0] {
@@ -98,7 +100,7 @@ module mips_cpu_bus(
     /* itype */
     assign itype_rs        = effective_ir[25:21];
     assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = {16'b0 , effective_ir[15:0]};
+    assign itype_immediate = {16'b0, effective_ir[15:0]}; /*Deliberately swapped for testing*/
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
@@ -107,9 +109,12 @@ module mips_cpu_bus(
     always_comb begin
         
         /* TODO assign more carefully: */
-        write = 0;
-        writedata = 0;
-        byteenable = 0;
+
+        if (opcode != OPCODE_SW) begin
+            write = 0;
+            writedata = 0;
+            byteenable = 4'b1111;
+        end
 
         /* Set active signal */
         active = pc != 0;
@@ -131,12 +136,17 @@ module mips_cpu_bus(
         end
         else begin
             instr_type = ITYPE;
-
             reg_file_rs = itype_rs;
+            reg_file_rt = itype_rt;
             reg_file_rd = itype_rt;
-            reg_file_write = state == STATE_EXECUTE;
-            reg_file_data_in = alu_out;
+            if(opcode != OPCODE_LW) begin
+                reg_file_write = ((state == STATE_EXECUTE) || ((state == STATE_MEMORY) || (state == STATE_WRITEBACK))) ; /*why only state EXECUTE, write shouldnt be enabled in state MEM?*/
+            //alu_out overwrote readdata for LW
+            end
             alu_b = itype_immediate;
+            if (opcode!=OPCODE_LW) begin
+                reg_file_data_in = alu_out;
+            end
         end
 
         /* Fetch */
@@ -144,10 +154,16 @@ module mips_cpu_bus(
             address = pc;
             read = 1;
         end
-        else begin
-            read = 0; 
-            // address needs to be set.
+        else if(state == STATE_EXECUTE && opcode == OPCODE_LW) begin
+            read = 1; 
         end
+        else begin
+            read = 0;
+        end
+        
+            // address needs to be set.
+
+
     end
 
     always @(posedge clk) begin
@@ -158,26 +174,71 @@ module mips_cpu_bus(
         else if(active) begin
             case(state)  
                 STATE_FETCH : begin
+                    reg_file_write <= 0;
                     /* Won't exit the fetch state if bus isn't ready to be
                      * read from yet. Further, it won't do anything if 
                      * it's still waiting */ 
                     if(!waitrequest) begin
                         pc <= pc + 4;
                         state <= STATE_EXECUTE;
-                        $display("state FETCH\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, readdata);
+                        $display("---------------------------------------------------------------------------------------");
+                        $display("\nstate FETCH\naddress: %x\nread: %d\neff_ir(readdata): %x\n", address, read, readdata);
                     end
+                    
                 end
                 STATE_EXECUTE : begin
-                    $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
+                    $display("\n");
+                    $display("Opcode: %x", opcode);
+                    case(opcode)
+                        OPCODE_RTYPE : begin
+                            $display("R TYPE");
+                        end
+                        OPCODE_LW : begin
+                            $display("LOAD WORD");
+                        end
+                        OPCODE_SW : begin
+                            $display("STORE WORD");
+                        end
+                        OPCODE_ADDIU : begin
+                            $display("ADDIU");
+                        end
+                    endcase
 
+                    $display("state EXEC\naddress: %x\neff_ir: %x", address, effective_ir);
+                    
                     ir <= readdata;
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
-                                pc <= rtype_rs;
+                                pc <= rtype_rs;                       
                             end
+                            state <= STATE_FETCH;
                         end 
                         ITYPE : begin
+                            case(opcode)
+                                OPCODE_LW : begin
+                                    write <= 0;
+                                    read <= 1; /*check if need to put in MEM STATE*/
+                                    byteenable <= 4'b1111;
+                                    address = alu_out;  // Changed this to a bloking assignment.
+                                    $display("Address: %x", address);
+                                    $display("Read: %x", read);
+                                    state <= STATE_MEMORY; /*Consider this*/
+                                end
+                                OPCODE_SW : begin
+                                    write <= 1;
+                                    read <= 0;
+                                    byteenable <= 4'b1111;
+                                    address <= alu_out;
+                                    $display("rs_val: %d,   reg_file_rs: %x", rs_val, reg_file_rs);
+                                    
+                                    writedata <= rt_val;
+                                    state <= STATE_MEMORY;
+                                end
+                                OPCODE_ADDIU : begin
+                                    state <= STATE_FETCH;
+                                end
+                            endcase
 
                         end 
                         JTYPE : begin
@@ -185,12 +246,38 @@ module mips_cpu_bus(
                         end 
                         default : ;
                     endcase
-                    state <= STATE_FETCH;
+                    
+
+                    
                 end
                 STATE_MEMORY : begin
-                   
+                    $display("\nstate MEMORY\naddress: %x\nread: %d\neff_ir: %x", address, read, effective_ir);
+                    //$display("write data: %x,   write: %x ", writedata, write);
+                    $display("readdata: %x", readdata);
+                    if (!waitrequest) begin
+                        case(opcode)
+                            OPCODE_LW : begin
+                                reg_file_data_in <= readdata;
+                                $display("reg_file_data_in: %x", reg_file_data_in);
+                                reg_file_write <= 1;
+                                state <= STATE_WRITEBACK;
+                            end
+                            OPCODE_SW : begin
+                                write <= 0;
+                                state <= STATE_FETCH;
+                            end
+                        endcase
+                    end
                 end
+
                 STATE_WRITEBACK : begin
+                    $display("\nstate WRITEBACK\naddress:   %x\nread:       %d\neff_ir:     %x", address, read, effective_ir);
+                    $display("readdata:     %x", readdata);
+                    /* reg_file_rd = itype_rt; already assigned*/
+                    /*Why is WRITEBACK needed?*/
+                    reg_file_write <= 1;
+                    reg_file_data_in = readdata;
+                    $display("reg_file_data_in: %x,     reg_file_address: %x", reg_file_data_in, reg_file_rd);
                     state <= STATE_FETCH;
                 end
                 default : ;

@@ -96,7 +96,6 @@ module mips_cpu_bus_generic_tb();
         else begin
             stack_read = 0;
             stack_write = 0;
-            readdata = 0;
         end
 
         // Is the address in the program region.
@@ -107,9 +106,8 @@ module mips_cpu_bus_generic_tb();
             readdata = prog_read_data;
         end 
         else begin
-            stack_read = 0;
-            stack_write = 0;
-            readdata = 0;
+            prog_read = 0;
+            prog_write = 0;
         end
 
     end
