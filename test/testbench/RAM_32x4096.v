@@ -3,14 +3,14 @@ module RAM_32x4096(
     input logic[11:0] address,
     input logic write,
     input logic read,
-    input logic print_mem,
+    //input logic print_mem,
     input logic[31:0] writedata,
     output logic[31:0] readdata
 );
     parameter RAM_INIT_FILE = "";
 
     logic[31:0] memory [4095:0];
-    integer k;
+    //integer k;
 
     initial begin
         integer i;
@@ -32,20 +32,20 @@ module RAM_32x4096(
             $display("RAM           write: %x,    writedata: %x,    address: %x", write, writedata, address);
             //$display("memory[%d] will be equal to %d", address, writedata);
             memory[address] = writedata;    // Had to change from non-blocking to blocking assignment.
-            $display("RAM           Mem[%x] = %x", address, memory[address]);
+            $display("RAM           Mem[%d] = %d", address, memory[address]);
         end
         if(read == 1) begin
-            $display("RAM       mem[%x]: readdata = %x", address, memory[address]);
+            $display("RAM       mem[%d]: readdata = %d", address, memory[address]);
         end
 
         readdata = memory[address]; // Read-after-write mode
     end
-
+/*
     always @(print_mem) begin
-        for(k = 0; k < 4096; k++) begin
-            $display("RAM: k: %x,   value: %x", k, memory[k]);
+        for(k = 0; k < 21; k++) begin
+            $display("RAM: k: %d,   value: %x", k, memory[k]);
         end
+*/
 
-    end
 
 endmodule

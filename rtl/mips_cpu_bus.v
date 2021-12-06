@@ -139,8 +139,10 @@ module mips_cpu_bus(
             reg_file_rs = itype_rs;
             reg_file_rt = itype_rt;
             reg_file_rd = itype_rt;
-            reg_file_write = ((state == STATE_EXECUTE) || ((state == STATE_MEMORY) || (state == STATE_WRITEBACK))) ; /*why only state EXECUTE, write shouldnt be enabled in state MEM?*/
+            if(opcode != OPCODE_LW) begin
+                reg_file_write = ((state == STATE_EXECUTE) || ((state == STATE_MEMORY) || (state == STATE_WRITEBACK))) ; /*why only state EXECUTE, write shouldnt be enabled in state MEM?*/
             //alu_out overwrote readdata for LW
+            end
             alu_b = itype_immediate;
             if (opcode!=OPCODE_LW) begin
                 reg_file_data_in = alu_out;
@@ -185,7 +187,8 @@ module mips_cpu_bus(
                     
                 end
                 STATE_EXECUTE : begin
-
+                    $display("\n");
+                    $display("Opcode: %x", opcode);
                     case(opcode)
                         OPCODE_RTYPE : begin
                             $display("R TYPE");
@@ -227,6 +230,7 @@ module mips_cpu_bus(
                                     read <= 0;
                                     byteenable <= 4'b1111;
                                     address <= alu_out;
+                                    $display("rs_val: %d,   reg_file_rs: %x", rs_val, reg_file_rs);
                                     
                                     writedata <= rt_val;
                                     state <= STATE_MEMORY;
@@ -248,7 +252,7 @@ module mips_cpu_bus(
                 end
                 STATE_MEMORY : begin
                     $display("\nstate MEMORY\naddress: %x\nread: %d\neff_ir: %x", address, read, effective_ir);
-                    //$display("write data: %x\nwrite: %x", writedata, write);
+                    //$display("write data: %x,   write: %x ", writedata, write);
                     $display("readdata: %x", readdata);
                     if (!waitrequest) begin
                         case(opcode)
@@ -271,6 +275,9 @@ module mips_cpu_bus(
                     $display("readdata:     %x", readdata);
                     /* reg_file_rd = itype_rt; already assigned*/
                     /*Why is WRITEBACK needed?*/
+                    reg_file_write <= 1;
+                    reg_file_data_in = readdata;
+                    $display("reg_file_data_in: %x,     reg_file_address: %x", reg_file_data_in, reg_file_rd);
                     state <= STATE_FETCH;
                 end
                 default : ;

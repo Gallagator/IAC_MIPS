@@ -22,8 +22,9 @@ module reg_file(
     end 
 
     /* Write to register on positive edge */
-    always_ff @(posedge clk) begin
+    always @(posedge clk) begin // Changed it from always_ff for debuggin.
         /* Reset registers to 0 */
+        $display("REG_FILE  write: %x,  write_addr: %x,     data_in: %x", write, write_addr, data_in);
         if(reset) begin
             for(i = 0; i < 31; i += 1) begin
                 regs[i] <= 0;

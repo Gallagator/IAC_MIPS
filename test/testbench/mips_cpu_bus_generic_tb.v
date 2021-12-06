@@ -31,25 +31,28 @@ module mips_cpu_bus_generic_tb();
     logic stack_write;
     logic[31:0] stack_read_data;
     logic debug_flag;
-    logic print_mem_tb;
-
+    //logic print_mem_tb;
+    integer counter;
     initial begin
-        print_mem_tb = 0;
+        //print_mem_tb = 0;
+        //counter = 0;
         reset = 0;
         clk = 0;
         #5;
         reset = 1;
-        clk = !clk;
+        clk = 1;
         #5;
-        clk = !clk;
+        clk = 0;
         #5;
-        clk = !clk;
+        clk = 1;
         reset = 0;
         repeat(TIMEOUT_CYCLES) begin
             #5;
-            clk = !clk;
+            clk = 0;
             #5;
-            clk = !clk;
+            clk = 1;
+            //counter = counter + 1;
+            //$display("Counter: %d", counter);
         end    
         $display("output: %d", register_v0);
         $fatal(2, "Simulation timeout");
@@ -69,7 +72,7 @@ module mips_cpu_bus_generic_tb();
         if(register_v0 != EXPECTED_REG_V0) begin
             $fatal(2, "Expected %d for reg_v0, got: %d ", EXPECTED_REG_V0, register_v0);
         end
-        print_mem_tb = 1;
+        //print_mem_tb = 1;
         $finish;
     end
 
@@ -89,7 +92,7 @@ module mips_cpu_bus_generic_tb();
             debug_flag = 1;
             stack_read = 0;
             stack_write = 0;
-            readdata = 0;
+            //readdata = 0;
         end
 
         // Is the address in the program region.
@@ -102,15 +105,16 @@ module mips_cpu_bus_generic_tb();
         else begin
             prog_read = 0;  // Changed this from stack_read to prog_read.
             prog_write = 0; // Same for prog_write.
-            readdata = 0;
+            //readdata = 0;   // When we are doing load, this would be executed after we have gotten the readdata from Stack_RAM meaning that we would not be able to read from Stack_RAM.
         end
 
     end
 
-    always @(stack_read_data) begin // Debugging purposes.
-        if(address == 20) begin
-            $display("Testbench:    address: %x,    RAM readdata: %x", address, stack_read_data);
-        end
+    always @(readdata) begin // Debugging purposes.
+        //$display("Testbench:    debug_flag: %x", debug_flag);
+        
+        $display("Testbench:    address: %x,    RAM stack_readdata: %x,     RAM readdata: %x", address, stack_read_data, readdata);
+
 
     end
 
@@ -121,8 +125,8 @@ module mips_cpu_bus_generic_tb();
         .read(prog_read),
         .write(prog_write),
         .writedata(writedata),
-        .readdata(prog_read_data),
-        .print_mem(0)
+        .readdata(prog_read_data)//,
+        //.print_mem(1'b0)
     );
     /* Addresses 0:4095 */
     RAM_32x4096 stack_region(
@@ -131,8 +135,8 @@ module mips_cpu_bus_generic_tb();
         .read(stack_read),
         .write(stack_write),
         .writedata(writedata),
-        .readdata(stack_read_data),
-        .print_mem(print_mem_tb)
+        .readdata(stack_read_data)//,
+        //.print_mem(print_mem_tb)
     );  
 
     mips_cpu_bus mips(.clk(clk), 
