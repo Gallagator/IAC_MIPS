@@ -31,7 +31,11 @@ module reg_file(
         end 
         else if(!reset && write && write_addr != 0) begin
             regs[write_addr - 1] <= data_in;     
+            $display("REG FILE      reg[%x] = %x,   write: %x", write_addr, data_in, write);    // If this is regs[write_addr - 1] instead of data_in then the display does not work.
         end 
+    end
+    always @(regs[write_addr-1]) begin
+        //$display("REG FILE      reg[%x] = %x,   write: %x", write_addr, regs[write_addr - 1], write);
     end
 
 endmodule

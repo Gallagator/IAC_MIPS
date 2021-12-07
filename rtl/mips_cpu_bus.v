@@ -120,8 +120,8 @@ module mips_cpu_bus(
         active = pc != 0;
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
-        effective_ir = state == STATE_EXECUTE ? readdata : ir;
-       
+        effective_ir = (state == STATE_EXECUTE) ? readdata : ir;
+        //$display("CPU    effec: %x, ir: %x", readdata, ir);
         if(opcode == OPCODE_RTYPE) begin 
             instr_type = RTYPE;
             reg_file_rs = rtype_rs;
@@ -143,6 +143,9 @@ module mips_cpu_bus(
                 reg_file_write = ((state == STATE_EXECUTE) || ((state == STATE_MEMORY) || (state == STATE_WRITEBACK))) ; /*why only state EXECUTE, write shouldnt be enabled in state MEM?*/
             //alu_out overwrote readdata for LW
             end
+            if(opcode == OPCODE_SW) begin
+                reg_file_write = 0;
+            end
             alu_b = itype_immediate;
             if (opcode!=OPCODE_LW) begin
                 reg_file_data_in = alu_out;
@@ -150,22 +153,79 @@ module mips_cpu_bus(
         end
 
         /* Fetch */
-        if(state == STATE_FETCH && !waitrequest) begin
+        if(state == STATE_FETCH /*&& !waitrequest*/) begin
             
             address = pc;
-            $display("CPU address: %x", address);
+            //$display("CPU address: %x", address);
             read = 1;
         end
         else if(state == STATE_EXECUTE && opcode == OPCODE_LW) begin
             read = 1; 
         end
         else begin
-            read = 0;
+            //read = 0; Why do we need this ? 
         end
         
             // address needs to be set.
 
+        case(state) 
+            STATE_FETCH: begin
+                reg_file_write = 0;
+                read = 1;
+                write = 0;
+                address = pc;
+            end
+            STATE_EXECUTE : begin
+                case(opcode)
+                    OPCODE_LW : begin
+                        write = 0;
+                        read = 1;
+                        //$display("CPU    read: %x", read);
+                        byteenable = 4'b1111;
+                        //address = alu_out;
 
+                    end
+                    OPCODE_SW : begin
+                        write = 0;  // Not too sure about this, but it works when write = 0 in the EXEC state and 1 in the MEM state.
+                        read = 0;
+                        byteenable = 4'b1111;
+                        //address = alu_out;
+                        //$display("CPU   address: %x,    alu_out: %x", address, alu_out);
+                        writedata = rt_val;
+                    end
+                endcase
+            end
+            STATE_MEMORY : begin
+                case(opcode)
+                    OPCODE_SW : begin
+                        write = 1;
+                        if(!waitrequest) begin  // Need to reconsider the placement of this if statement, this is linked to the if statement in the other always block.
+                            write = 0;
+                        end
+                    end
+                    OPCODE_LW : begin
+                        read = 1;
+                        if(!waitrequest) begin
+                            reg_file_data_in = readdata;
+                            reg_file_write = 1;
+                        end
+                    end
+                endcase
+            end
+        endcase
+
+    end
+
+    always @(state) begin
+        case(state)
+            STATE_FETCH : begin
+                $display("\n\n---------------------------------------------------------------------------");
+                $display("FETCH STATE");
+            end
+            STATE_EXECUTE : $display("\nEXEC STATE");
+            STATE_MEMORY : $display("\nMEMORY STATE");
+            STATE_WRITEBACK : $display("\nWRITEBACK STATE");
+        endcase
     end
 
     always @(posedge clk) begin
@@ -176,20 +236,22 @@ module mips_cpu_bus(
         else if(active) begin
             case(state)  
                 STATE_FETCH : begin
-                    reg_file_write <= 0;
+                    //reg_file_write <= 0;
                     /* Won't exit the fetch state if bus isn't ready to be
                      * read from yet. Further, it won't do anything if 
                      * it's still waiting */ 
                     if(!waitrequest) begin
                         pc <= pc + 4;
                         state <= STATE_EXECUTE;
-                        $display("---------------------------------------------------------------------------------------");
-                        $display("\nstate FETCH\naddress: %x\nread: %d\neff_ir(readdata): %x\n", address, read, readdata);
+                        
+                        //$display("address: %x\nread: %d\neff_ir(readdata): %x\n", address, read, readdata);
                     end
                     
                 end
                 STATE_EXECUTE : begin
-                    $display("\n");
+                    
+                    ir <= readdata;
+                    //$display("CPU ir: %x", ir);
                     case(opcode)
                         OPCODE_RTYPE : begin
                             $display("R TYPE");
@@ -206,9 +268,8 @@ module mips_cpu_bus(
                         default : $display("OPCODE NOT KNOWN");
                     endcase
 
-                    $display("state EXEC\naddress: %x\neff_ir: %x", address, effective_ir);
+                    //$display("address: %x\neff_ir: %x", address, effective_ir);
                     
-                    ir <= readdata;
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
@@ -219,22 +280,15 @@ module mips_cpu_bus(
                         ITYPE : begin
                             case(opcode)
                                 OPCODE_LW : begin
-                                    write <= 0;
-                                    read <= 1; /*check if need to put in MEM STATE*/
-                                    byteenable <= 4'b1111;
-                                    address = alu_out;  // Changed this to a bloking assignment.
-                                    $display("Address: %x", address);
-                                    $display("Read: %x", read);
+                                    address = alu_out;  // Changed this to a bloking assignment. Need to move it out of this block.
+                                    //$display("Address: %x", address);
+                                    //$display("Read: %x", read);
                                     state <= STATE_MEMORY; /*Consider this*/
                                 end
                                 OPCODE_SW : begin
-                                    write <= 1;
-                                    read <= 0;
-                                    byteenable <= 4'b1111;
-                                    address <= alu_out;
-                                    $display("rs_val: %d,   reg_file_rs: %x", rs_val, reg_file_rs);
-                                    
-                                    writedata <= rt_val;
+                                    address <= alu_out; // Need to move this outside this block, but will not work, because we have instantiated two RAMs.
+                                                        // If this was in a comb block then the address gets updated automatically in the CPU and the testbench.
+                                                        // And, since we have 2 outputs from 2 RAMs this will automatically select the output of the Stack RAM since it is in the address space.
                                     state <= STATE_MEMORY;
                                 end
                                 OPCODE_ADDIU : begin
@@ -253,19 +307,16 @@ module mips_cpu_bus(
                     
                 end
                 STATE_MEMORY : begin
-                    $display("\nstate MEMORY\naddress: %x\nread: %d\neff_ir: %x", address, read, effective_ir);
+                    //$display("\naddress: %x\nread: %d\neff_ir: %x", address, read, effective_ir);
                     //$display("write data: %x,   write: %x ", writedata, write);
-                    $display("readdata: %x", readdata);
-                    if (!waitrequest) begin
+                    //$display("readdata: %x", readdata);
+                    if (!waitrequest) begin     // Need to reconsider this if statement placement.
                         case(opcode)
                             OPCODE_LW : begin
-                                reg_file_data_in <= readdata;
-                                $display("reg_file_data_in: %x", reg_file_data_in);
-                                reg_file_write <= 1;
+                                //$display("reg_file_data_in: %x", reg_file_data_in);
                                 state <= STATE_WRITEBACK;
                             end
                             OPCODE_SW : begin
-                                write <= 0;
                                 state <= STATE_FETCH;
                             end
                         endcase
@@ -273,13 +324,12 @@ module mips_cpu_bus(
                 end
 
                 STATE_WRITEBACK : begin
-                    $display("\nstate WRITEBACK\naddress:   %x\nread:       %d\neff_ir:     %x", address, read, effective_ir);
-                    $display("readdata:     %x", readdata);
-                    /* reg_file_rd = itype_rt; already assigned*/
+                    //$display("\naddress:   %x\nread:       %d\neff_ir:     %x", address, read, effective_ir);
+                    //$display("readdata:     %x", readdata);
                     /*Why is WRITEBACK needed?*/
-                    reg_file_write <= 1;
-                    reg_file_data_in = readdata;
-                    $display("reg_file_data_in: %x,     reg_file_address: %x", reg_file_data_in, reg_file_rd);
+                    //reg_file_write <= 1;
+                    //reg_file_data_in = readdata;
+                    //$display("reg_file_data_in: %x,     reg_file_address: %x", reg_file_data_in, reg_file_rd);
                     state <= STATE_FETCH;
                 end
                 default : ;

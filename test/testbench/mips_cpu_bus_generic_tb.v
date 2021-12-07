@@ -50,12 +50,12 @@ module mips_cpu_bus_generic_tb();
             if(waitrequest_cycles == 0) begin
                 waitrequest = 0;
                 waitrequest_cycles = $urandom % MAX_WAIT_REQUEST_CYCLES + 1;
-                $display("waitrequest_cycles: %d", waitrequest_cycles);
+                //$display("****************** Waitrequest_cycles: %d", waitrequest_cycles);
             end
             else begin
                 waitrequest = 1;
             end
-
+            //$display("****************** Memory not accessible, waitreques_cycle: %x", waitrequest_cycles);
             #5;
             clk = !clk;
             #5;
@@ -85,6 +85,8 @@ module mips_cpu_bus_generic_tb();
     assign stack_addr = address[13:2];
     assign prog_addr = address[13:2];
 
+    
+
     always_comb begin
 
         // Is the address in the stack region.        
@@ -112,12 +114,12 @@ module mips_cpu_bus_generic_tb();
 
     end
 
-    always @(address) begin
-        $display("Testbench:    address: %x", address);
+    always @(read) begin
+        //$display("Testbench:    readdata: %x, address: %x, read: %x, write: %x, byteenable: %x", readdata, address, read, write, byteenable);
     end
 
     always @(readdata) begin
-        $display("Testbench:    readdata: %x", readdata);
+        //$display("Testbench:    readdata: %x, address: %x, read: %x", readdata, address, read);
     end
 
     /* Addresses BASE_ADDRESS:BASE_ADDRESS+4095*/
