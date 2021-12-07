@@ -121,7 +121,9 @@ module mips_cpu_bus(
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
         effective_ir = (state == STATE_EXECUTE) ? readdata : ir;
-        //$display("CPU    effec: %x, ir: %x", readdata, ir);
+
+        /* The DECODE state should on happen once right?*/
+        // Could be moved to the EXEC state. Tried moving it to the EXEC state altogether but it is not that simple.
         if(opcode == OPCODE_RTYPE) begin 
             instr_type = RTYPE;
             reg_file_rs = rtype_rs;
@@ -140,7 +142,7 @@ module mips_cpu_bus(
             reg_file_rt = itype_rt;
             reg_file_rd = itype_rt;
             if(opcode != OPCODE_LW) begin
-                reg_file_write = ((state == STATE_EXECUTE) || ((state == STATE_MEMORY) || (state == STATE_WRITEBACK))) ; /*why only state EXECUTE, write shouldnt be enabled in state MEM?*/
+                reg_file_write = ((state == STATE_EXECUTE) || ((state == STATE_MEMORY) || (state == STATE_WRITEBACK))) ; //why only state EXECUTE, write shouldnt be enabled in state MEM?
             //alu_out overwrote readdata for LW
             end
             if(opcode == OPCODE_SW) begin
@@ -152,21 +154,7 @@ module mips_cpu_bus(
             end
         end
 
-        /* Fetch */
-        if(state == STATE_FETCH /*&& !waitrequest*/) begin
-            
-            address = pc;
-            //$display("CPU address: %x", address);
-            read = 1;
-        end
-        else if(state == STATE_EXECUTE && opcode == OPCODE_LW) begin
-            read = 1; 
-        end
-        else begin
-            //read = 0; Why do we need this ? 
-        end
-        
-            // address needs to be set.
+
 
         case(state) 
             STATE_FETCH: begin
@@ -180,9 +168,8 @@ module mips_cpu_bus(
                     OPCODE_LW : begin
                         write = 0;
                         read = 1;
-                        //$display("CPU    read: %x", read);
                         byteenable = 4'b1111;
-                        //address = alu_out;
+                        //address = alu_out;    Have not figured out how to move this into this block.
 
                     end
                     OPCODE_SW : begin
@@ -190,7 +177,6 @@ module mips_cpu_bus(
                         read = 0;
                         byteenable = 4'b1111;
                         //address = alu_out;
-                        //$display("CPU   address: %x,    alu_out: %x", address, alu_out);
                         writedata = rt_val;
                     end
                 endcase
@@ -216,6 +202,8 @@ module mips_cpu_bus(
 
     end
 
+/* Debuggin: Really usuful to see when the states automatically. 
+
     always @(state) begin
         case(state)
             STATE_FETCH : begin
@@ -227,7 +215,7 @@ module mips_cpu_bus(
             STATE_WRITEBACK : $display("\nWRITEBACK STATE");
         endcase
     end
-
+*/
     always @(posedge clk) begin
         if(reset) begin
             pc <= 32'hBFC0_0000;
@@ -243,15 +231,11 @@ module mips_cpu_bus(
                     if(!waitrequest) begin
                         pc <= pc + 4;
                         state <= STATE_EXECUTE;
-                        
-                        //$display("address: %x\nread: %d\neff_ir(readdata): %x\n", address, read, readdata);
                     end
-                    
+
                 end
                 STATE_EXECUTE : begin
-                    
                     ir <= readdata;
-                    //$display("CPU ir: %x", ir);
                     case(opcode)
                         OPCODE_RTYPE : begin
                             $display("R TYPE");
@@ -267,8 +251,6 @@ module mips_cpu_bus(
                         end
                         default : $display("OPCODE NOT KNOWN");
                     endcase
-
-                    //$display("address: %x\neff_ir: %x", address, effective_ir);
                     
                     case(instr_type) 
                         RTYPE : begin
@@ -281,8 +263,6 @@ module mips_cpu_bus(
                             case(opcode)
                                 OPCODE_LW : begin
                                     address = alu_out;  // Changed this to a bloking assignment. Need to move it out of this block.
-                                    //$display("Address: %x", address);
-                                    //$display("Read: %x", read);
                                     state <= STATE_MEMORY; /*Consider this*/
                                 end
                                 OPCODE_SW : begin
@@ -307,13 +287,9 @@ module mips_cpu_bus(
                     
                 end
                 STATE_MEMORY : begin
-                    //$display("\naddress: %x\nread: %d\neff_ir: %x", address, read, effective_ir);
-                    //$display("write data: %x,   write: %x ", writedata, write);
-                    //$display("readdata: %x", readdata);
                     if (!waitrequest) begin     // Need to reconsider this if statement placement.
                         case(opcode)
                             OPCODE_LW : begin
-                                //$display("reg_file_data_in: %x", reg_file_data_in);
                                 state <= STATE_WRITEBACK;
                             end
                             OPCODE_SW : begin
@@ -324,12 +300,8 @@ module mips_cpu_bus(
                 end
 
                 STATE_WRITEBACK : begin
-                    //$display("\naddress:   %x\nread:       %d\neff_ir:     %x", address, read, effective_ir);
-                    //$display("readdata:     %x", readdata);
-                    /*Why is WRITEBACK needed?*/
-                    //reg_file_write <= 1;
-                    //reg_file_data_in = readdata;
-                    //$display("reg_file_data_in: %x,     reg_file_address: %x", reg_file_data_in, reg_file_rd);
+                    /* For this implementation I need to use Writeback */
+                    // Need to think why.
                     state <= STATE_FETCH;
                 end
                 default : ;

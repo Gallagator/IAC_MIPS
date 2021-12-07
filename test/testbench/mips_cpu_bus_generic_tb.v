@@ -47,15 +47,13 @@ module mips_cpu_bus_generic_tb();
         clk = !clk;
         reset = 0;
         repeat(TIMEOUT_CYCLES) begin
-            if(waitrequest_cycles == 0) begin
+            if(waitrequest_cycles == 0) begin   // Would the waitrequest always be 0 at the start?
                 waitrequest = 0;
                 waitrequest_cycles = $urandom % MAX_WAIT_REQUEST_CYCLES + 1;
-                //$display("****************** Waitrequest_cycles: %d", waitrequest_cycles);
             end
             else begin
                 waitrequest = 1;
             end
-            //$display("****************** Memory not accessible, waitreques_cycle: %x", waitrequest_cycles);
             #5;
             clk = !clk;
             #5;
@@ -112,14 +110,6 @@ module mips_cpu_bus_generic_tb();
             prog_write = 0;
         end
 
-    end
-
-    always @(read) begin
-        //$display("Testbench:    readdata: %x, address: %x, read: %x, write: %x, byteenable: %x", readdata, address, read, write, byteenable);
-    end
-
-    always @(readdata) begin
-        //$display("Testbench:    readdata: %x, address: %x, read: %x", readdata, address, read);
     end
 
     /* Addresses BASE_ADDRESS:BASE_ADDRESS+4095*/

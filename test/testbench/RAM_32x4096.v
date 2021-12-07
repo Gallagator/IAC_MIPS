@@ -51,10 +51,8 @@ module RAM_32x4096(
     always @(posedge clk) begin
         if (write) begin
             memory[address] <= masked_writedata;
-            //$display("RAM       mem[%x] = %x,   write: %x", address, masked_writedata, write);
         end
         readdata <= readdata_toggled; // Read-after-write mode
-        //$display("RAM       readdata = mem[%x] = %x", address, readdata);
     end
 
     toggle_endeanness togglewrite(
