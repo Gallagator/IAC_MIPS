@@ -88,6 +88,8 @@ module mips_cpu_bus(
     /* jtype_instructions */
     logic[25:0] jtype_address;
 
+    logic waitrequest_prev;
+
     assign opcode = effective_ir[31:26];
 
     /* rtype */
@@ -111,7 +113,8 @@ module mips_cpu_bus(
         active = pc != 0;
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
-        effective_ir = (state == STATE_EXECUTE) ? readdata : ir;
+        effective_ir = (state == STATE_EXECUTE && !waitrequest_prev) 
+                       ? readdata : ir;
 
         if(opcode == OPCODE_RTYPE) begin 
             instr_type = RTYPE;
@@ -128,15 +131,11 @@ module mips_cpu_bus(
         else begin
             instr_type = ITYPE;
             reg_file_rs = itype_rs;
-            reg_file_rt = itype_rt;  // TODO check if necessary.
+            reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
 
             alu_b = itype_immediate;
-
-
         end
-
-
 
         case(state) 
             STATE_FETCH: begin
@@ -183,21 +182,9 @@ module mips_cpu_bus(
 
     end
 
-/* Debuggin: Really usuful to see when the states automatically. 
-
-    always @(state) begin
-        case(state)
-            STATE_FETCH : begin
-                $display("\n\n---------------------------------------------------------------------------");
-                $display("FETCH STATE");
-            end
-            STATE_EXECUTE : $display("\nEXEC STATE");
-            STATE_MEMORY : $display("\nMEMORY STATE");
-            STATE_WRITEBACK : $display("\nWRITEBACK STATE");
-        endcase
-    end
-*/
     always @(posedge clk) begin
+        waitrequest_prev <= waitrequest;
+       
         if(reset) begin
             pc <= 32'hBFC0_0000;
             state <= STATE_FETCH;
@@ -216,8 +203,8 @@ module mips_cpu_bus(
 
                 end
                 STATE_EXECUTE : begin
-                    ir <= readdata;
-                                        
+                    ir <= waitrequest_prev ? ir : readdata;
+
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
