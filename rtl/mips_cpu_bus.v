@@ -100,30 +100,19 @@ module mips_cpu_bus(
     /* itype */
     assign itype_rs        = effective_ir[25:21];
     assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = {16'b0, effective_ir[15:0]}; /*Deliberately swapped for testing*/
+    assign itype_immediate = {16'b0, effective_ir[15:0]};
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
 
-    /* iverilog won't allow always_comb when selecting bits with [] */
     always_comb begin
         
-        /* TODO assign more carefully: */
-
-        if (opcode != OPCODE_SW) begin
-            write = 0;
-            writedata = 0;
-            byteenable = 4'b1111;
-        end
-
-        /* Set active signal */
+                /* Set active signal */
         active = pc != 0;
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
         effective_ir = (state == STATE_EXECUTE) ? readdata : ir;
 
-        /* The DECODE state should on happen once right?*/
-        // Could be moved to the EXEC state. Tried moving it to the EXEC state altogether but it is not that simple.
         if(opcode == OPCODE_RTYPE) begin 
             instr_type = RTYPE;
             reg_file_rs = rtype_rs;
@@ -139,19 +128,12 @@ module mips_cpu_bus(
         else begin
             instr_type = ITYPE;
             reg_file_rs = itype_rs;
-            reg_file_rt = itype_rt;
+            reg_file_rt = itype_rt;  // TODO check if necessary.
             reg_file_rd = itype_rt;
-            if(opcode != OPCODE_LW) begin
-                reg_file_write = ((state == STATE_EXECUTE) || ((state == STATE_MEMORY) || (state == STATE_WRITEBACK))) ; //why only state EXECUTE, write shouldnt be enabled in state MEM?
-            //alu_out overwrote readdata for LW
-            end
-            if(opcode == OPCODE_SW) begin
-                reg_file_write = 0;
-            end
+
             alu_b = itype_immediate;
-            if (opcode!=OPCODE_LW) begin
-                reg_file_data_in = alu_out;
-            end
+
+
         end
 
 
@@ -162,6 +144,7 @@ module mips_cpu_bus(
                 read = 1;
                 write = 0;
                 address = pc;
+                byteenable = 4'b1111;
             end
             STATE_EXECUTE : begin
                 case(opcode)
@@ -169,32 +152,30 @@ module mips_cpu_bus(
                         write = 0;
                         read = 1;
                         byteenable = 4'b1111;
-                        //address = alu_out;    Have not figured out how to move this into this block.
-
+                        address = alu_out;  
+                        reg_file_write = 0;
                     end
                     OPCODE_SW : begin
-                        write = 0;  // Not too sure about this, but it works when write = 0 in the EXEC state and 1 in the MEM state.
+                        write = 1; 
                         read = 0;
                         byteenable = 4'b1111;
-                        //address = alu_out;
+                        address = alu_out;
                         writedata = rt_val;
+                        reg_file_write = 0;
+                    end
+                    default : begin
+                        write = 0;  
+                        read = 0;
+                        reg_file_write = 1;
+                        reg_file_data_in = alu_out;
                     end
                 endcase
             end
             STATE_MEMORY : begin
                 case(opcode)
-                    OPCODE_SW : begin
-                        write = 1;
-                        if(!waitrequest) begin  // Need to reconsider the placement of this if statement, this is linked to the if statement in the other always block.
-                            write = 0;
-                        end
-                    end
                     OPCODE_LW : begin
-                        read = 1;
-                        if(!waitrequest) begin
-                            reg_file_data_in = readdata;
-                            reg_file_write = 1;
-                        end
+                        reg_file_data_in = readdata;
+                        reg_file_write = 1;
                     end
                 endcase
             end
@@ -236,22 +217,7 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     ir <= readdata;
-                    case(opcode)
-                        OPCODE_RTYPE : begin
-                            $display("R TYPE");
-                        end
-                        OPCODE_LW : begin
-                            $display("LOAD WORD");
-                        end
-                        OPCODE_SW : begin
-                            $display("STORE WORD");
-                        end
-                        OPCODE_ADDIU : begin
-                            $display("ADDIU");
-                        end
-                        default : $display("OPCODE NOT KNOWN");
-                    endcase
-                    
+                                        
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
@@ -260,21 +226,20 @@ module mips_cpu_bus(
                             state <= STATE_FETCH;
                         end 
                         ITYPE : begin
-                            case(opcode)
-                                OPCODE_LW : begin
-                                    address = alu_out;  // Changed this to a bloking assignment. Need to move it out of this block.
-                                    state <= STATE_MEMORY; /*Consider this*/
-                                end
-                                OPCODE_SW : begin
-                                    address <= alu_out; // Need to move this outside this block, but will not work, because we have instantiated two RAMs.
-                                                        // If this was in a comb block then the address gets updated automatically in the CPU and the testbench.
-                                                        // And, since we have 2 outputs from 2 RAMs this will automatically select the output of the Stack RAM since it is in the address space.
+                            /* Will also have to include other load instrs */
+                            if(opcode == OPCODE_LW) begin
+                                if(!waitrequest) begin 
                                     state <= STATE_MEMORY;
-                                end
-                                OPCODE_ADDIU : begin
+                                end 
+                            end
+                            else if(opcode == OPCODE_SW) begin
+                                if(!waitrequest) begin 
                                     state <= STATE_FETCH;
                                 end
-                            endcase
+                            end 
+                            else begin
+                                state <= STATE_FETCH;
+                            end
 
                         end 
                         JTYPE : begin
@@ -283,27 +248,11 @@ module mips_cpu_bus(
                         default : ;
                     endcase
                     
-
-                    
                 end
                 STATE_MEMORY : begin
-                    if (!waitrequest) begin     // Need to reconsider this if statement placement.
-                        case(opcode)
-                            OPCODE_LW : begin
-                                state <= STATE_WRITEBACK;
-                            end
-                            OPCODE_SW : begin
-                                state <= STATE_FETCH;
-                            end
-                        endcase
-                    end
-                end
-
-                STATE_WRITEBACK : begin
-                    /* For this implementation I need to use Writeback */
-                    // Need to think why.
                     state <= STATE_FETCH;
                 end
+
                 default : ;
             endcase
         end
