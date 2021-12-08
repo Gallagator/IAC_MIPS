@@ -10,3 +10,4 @@ main:
     lw    $2, 10($5)
     jr $0
 .end	main
+
