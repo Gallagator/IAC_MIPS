@@ -72,13 +72,13 @@ module mips_cpu_bus(
     assign rtype_fncode = effective_ir[5:0];
 
     /* itype */
-    assign itype_rs        = effective_ir[25:21];
-    assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = {16'b0, effective_ir[15:0]};
+    assign itype_rs     = effective_ir[25:21];
+    assign itype_rt     = effective_ir[20:16];
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
 
+    /* Bit addressing does not work in  always comb blocks. */
     always_comb begin
         
                 /* Set active signal */
@@ -105,7 +105,6 @@ module mips_cpu_bus(
             reg_file_rs = itype_rs;
             reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
-
             alu_b = itype_immediate;
         end
 
@@ -123,7 +122,7 @@ module mips_cpu_bus(
                         write = 0;
                         read = 1;
                         byteenable = 4'b1111;
-                        address = alu_out;  
+                        address = alu_out;
                         reg_file_write = 0;
                     end
                     OPCODE_SW : begin
@@ -132,6 +131,13 @@ module mips_cpu_bus(
                         byteenable = 4'b1111;
                         address = alu_out;
                         writedata_eb = rt_val;
+                        reg_file_write = 0;
+                    end
+                    OPCODE_LB : begin
+                        write = 0;
+                        read = 1;
+                        //byteenable = 
+                        address = alu_out;
                         reg_file_write = 0;
                     end
                     default : begin
@@ -180,7 +186,7 @@ module mips_cpu_bus(
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
-                                pc <= rtype_rs;                       
+                                pc <= rtype_rs;
                             end
                             state <= STATE_FETCH;
                         end 
@@ -239,6 +245,13 @@ module mips_cpu_bus(
     toggle_endianness to_big(.a(readdata), .r(readdata_eb));
     toggle_endianness to_little(.a(writedata_eb), .r(writedata));
 
+    sign_extension sign_extension(
+        .itype_immediate(effective_ir[15:0]),
+        .msb(effective_ir[15]),
+        .opcode(opcode),
+        .signed_itype_immediate(itype_immediate)
+    );
+
 endmodule
 
 module toggle_endianness(
@@ -246,5 +259,6 @@ module toggle_endianness(
     output logic[31:0] r
 );
     assign r = {a[7:0], a[15:8], a[23:16], a[31:24]};
+
 endmodule
 
