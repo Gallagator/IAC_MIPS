@@ -1,3 +1,5 @@
+`include "package.v"
+
 module sign_extension(
     input logic[15:0] itype_immediate,
     input logic msb,
