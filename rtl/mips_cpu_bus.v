@@ -15,7 +15,7 @@ typedef enum logic[5:0] {
     FUNCT_SUBU = 6'b10_0011
 } funct_t;
 
-typedef enum logic[1:0] {    /*3 bits for this?*/
+typedef enum logic[1:0] {
     STATE_FETCH = 0,
     STATE_EXECUTE = 1,
     STATE_MEMORY = 2,
@@ -114,9 +114,8 @@ module mips_cpu_bus(
     assign rtype_fncode = effective_ir[5:0];
 
     /* itype */
-    assign itype_rs        = effective_ir[25:21];
-    assign itype_rt        = effective_ir[20:16];
-    //assign itype_immediate = {16'b0, effective_ir[15:0]};
+    assign itype_rs     = effective_ir[25:21];
+    assign itype_rt     = effective_ir[20:16];
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
@@ -148,7 +147,6 @@ module mips_cpu_bus(
             reg_file_rs = itype_rs;
             reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
-            //$display("Immediate constant: %x", itype_immediate);
             alu_b = itype_immediate;
         end
 
@@ -167,7 +165,6 @@ module mips_cpu_bus(
                         read = 1;
                         byteenable = 4'b1111;
                         address = alu_out;
-                        //$display("CPU   address: %x", address);
                         reg_file_write = 0;
                     end
                     OPCODE_SW : begin
@@ -231,7 +228,7 @@ module mips_cpu_bus(
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
-                                pc <= rtype_rs;                       
+                                pc <= rtype_rs;
                             end
                             state <= STATE_FETCH;
                         end 
