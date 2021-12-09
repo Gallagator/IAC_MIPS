@@ -1,10 +1,3 @@
-module toggle_endeanness(
-    input logic[31:0] a,
-    output logic[31:0] b
-);
-    assign b = {a[7:0], a[15:8], a[23:16], a[31:24]};
-endmodule
-
 
 module RAM_32x4096(
     input logic clk,
@@ -19,8 +12,6 @@ module RAM_32x4096(
 
     logic[31:0] memory [4095:0];
 
-    logic[31:0] writedata_toggled;
-    logic[31:0] readdata_toggled;
     logic[31:0] masked_writedata;
     logic[31:0] mask;
 
@@ -45,23 +36,15 @@ module RAM_32x4096(
     };
     
     assign  masked_writedata = 
-        (writedata_toggled & mask) | (memory[address] & (~mask));
+        (writedata & mask) | (memory[address] & (~mask));
 
     /* Synchronous write path */
     always_ff @(posedge clk) begin
         if (write) begin
             memory[address] <= masked_writedata;
         end
-        readdata <= readdata_toggled; // Read-after-write mode
+        readdata <= memory[address]; // Read-after-write mode
     end
 
-    toggle_endeanness togglewrite(
-        .a(writedata),
-        .b(writedata_toggled)
-    );
-    toggle_endeanness toggleread(
-        .a(memory[address]),
-        .b(readdata_toggled)
-    );
 endmodule
 
