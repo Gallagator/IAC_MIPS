@@ -1,3 +1,5 @@
+`include "package.v"
+
 module alu_ctrl(
     input logic[5:0] opcode,
     input logic[5:0] rtype_fncode,

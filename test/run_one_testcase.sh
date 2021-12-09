@@ -8,6 +8,7 @@ EXPECTED=$(cat expected/${TESTCASE}.txt)
 # into the testbench.
 iverilog -Wall -g2012 \
     ../rtl/*.v ../rtl/mips_cpu/*.v testbench/*.v \
+    -I../rtl/mips_cpu \
     -s mips_cpu_bus_generic_tb \
     -Pmips_cpu_bus_generic_tb.RAM_INIT_FILE=\"machine_code/${TESTCASE}.hex.txt\" \
     -Pmips_cpu_bus_generic_tb.EXPECTED_REG_V0=${EXPECTED} \
