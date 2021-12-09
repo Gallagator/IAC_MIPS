@@ -48,7 +48,7 @@ module RAM_32x4096(
         (writedata_toggled & mask) | (memory[address] & (~mask));
 
     /* Synchronous write path */
-    always @(posedge clk) begin
+    always_ff @(posedge clk) begin
         if (write) begin
             memory[address] <= masked_writedata;
         end

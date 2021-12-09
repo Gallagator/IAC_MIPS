@@ -8,7 +8,7 @@ typedef enum logic[5:0] {
     FUNCT_JR   = 6'b00_1000
 } funct_t;
 
-typedef enum logic[2:0] {
+typedef enum logic[1:0] {    /*3 bits for this?*/
     STATE_FETCH = 0,
     STATE_EXECUTE = 1,
     STATE_MEMORY = 2,
@@ -19,7 +19,9 @@ typedef enum logic[5:0] {
     OPCODE_RTYPE = 6'b00_0000,
     OPCODE_JAL   = 6'b00_0011,
     OPCODE_J     = 6'b00_0010,
-    OPCODE_ADDIU = 6'b00_1001
+    OPCODE_ADDIU = 6'b00_1001,
+    OPCODE_LW = 6'b10_0011,
+    OPCODE_SW = 6'b10_1011
 } opcode_t;
     
 typedef enum logic[1:0] {
@@ -86,6 +88,8 @@ module mips_cpu_bus(
     /* jtype_instructions */
     logic[25:0] jtype_address;
 
+    logic waitrequest_prev;
+
     assign opcode = effective_ir[31:26];
 
     /* rtype */
@@ -98,25 +102,20 @@ module mips_cpu_bus(
     /* itype */
     assign itype_rs        = effective_ir[25:21];
     assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = {16'b0 , effective_ir[15:0]};
+    assign itype_immediate = {16'b0, effective_ir[15:0]};
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
 
-    /* iverilog won't allow always_comb when selecting bits with [] */
     always_comb begin
         
-        /* TODO assign more carefully: */
-        write = 0;
-        writedata = 0;
-        byteenable = 0;
-
-        /* Set active signal */
+                /* Set active signal */
         active = pc != 0;
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
-        effective_ir = state == STATE_EXECUTE ? readdata : ir;
-       
+        effective_ir = (state == STATE_EXECUTE && !waitrequest_prev) 
+                       ? readdata : ir;
+
         if(opcode == OPCODE_RTYPE) begin 
             instr_type = RTYPE;
             reg_file_rs = rtype_rs;
@@ -131,26 +130,61 @@ module mips_cpu_bus(
         end
         else begin
             instr_type = ITYPE;
-
             reg_file_rs = itype_rs;
+            reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
-            reg_file_write = state == STATE_EXECUTE;
-            reg_file_data_in = alu_out;
+
             alu_b = itype_immediate;
         end
 
-        /* Fetch */
-        if(state == STATE_FETCH && !waitrequest) begin
-            address = pc;
-            read = 1;
-        end
-        else begin
-            read = 0; 
-            // address needs to be set.
-        end
+        case(state) 
+            STATE_FETCH: begin
+                reg_file_write = 0;
+                read = 1;
+                write = 0;
+                address = pc;
+                byteenable = 4'b1111;
+            end
+            STATE_EXECUTE : begin
+                case(opcode)
+                    OPCODE_LW : begin
+                        write = 0;
+                        read = 1;
+                        byteenable = 4'b1111;
+                        address = alu_out;  
+                        reg_file_write = 0;
+                    end
+                    OPCODE_SW : begin
+                        write = 1; 
+                        read = 0;
+                        byteenable = 4'b1111;
+                        address = alu_out;
+                        writedata = rt_val;
+                        reg_file_write = 0;
+                    end
+                    default : begin
+                        write = 0;  
+                        read = 0;
+                        reg_file_write = 1;
+                        reg_file_data_in = alu_out;
+                    end
+                endcase
+            end
+            STATE_MEMORY : begin
+                case(opcode)
+                    OPCODE_LW : begin
+                        reg_file_data_in = readdata;
+                        reg_file_write = 1;
+                    end
+                endcase
+            end
+        endcase
+
     end
 
     always @(posedge clk) begin
+        waitrequest_prev <= waitrequest;
+       
         if(reset) begin
             pc <= 32'hBFC0_0000;
             state <= STATE_FETCH;
@@ -158,26 +192,41 @@ module mips_cpu_bus(
         else if(active) begin
             case(state)  
                 STATE_FETCH : begin
+                    //reg_file_write <= 0;
                     /* Won't exit the fetch state if bus isn't ready to be
                      * read from yet. Further, it won't do anything if 
                      * it's still waiting */ 
                     if(!waitrequest) begin
                         pc <= pc + 4;
                         state <= STATE_EXECUTE;
-                        $display("state FETCH\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, readdata);
                     end
+
                 end
                 STATE_EXECUTE : begin
-                    $display("state EXEC\naddress: %x\nread: %d\neff_ir: %x\n\n", address, read, effective_ir);
+                    ir <= waitrequest_prev ? ir : readdata;
 
-                    ir <= readdata;
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
-                                pc <= rtype_rs;
+                                pc <= rtype_rs;                       
                             end
+                            state <= STATE_FETCH;
                         end 
                         ITYPE : begin
+                            /* Will also have to include other load instrs */
+                            if(opcode == OPCODE_LW) begin
+                                if(!waitrequest) begin 
+                                    state <= STATE_MEMORY;
+                                end 
+                            end
+                            else if(opcode == OPCODE_SW) begin
+                                if(!waitrequest) begin 
+                                    state <= STATE_FETCH;
+                                end
+                            end 
+                            else begin
+                                state <= STATE_FETCH;
+                            end
 
                         end 
                         JTYPE : begin
@@ -185,14 +234,12 @@ module mips_cpu_bus(
                         end 
                         default : ;
                     endcase
-                    state <= STATE_FETCH;
+                    
                 end
                 STATE_MEMORY : begin
-                   
-                end
-                STATE_WRITEBACK : begin
                     state <= STATE_FETCH;
                 end
+
                 default : ;
             endcase
         end

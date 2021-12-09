@@ -12,14 +12,14 @@ module reg_file(
     output logic[31:0] register_v0
 );
     logic[31: 0] regs[31];
-    integer i; 
+    integer i;
 
     /* Select registers combinatorially */
     always_comb begin
         a = addr_a == 0 ? 0 : regs[addr_a - 1];
         b = addr_b == 0 ? 0 : regs[addr_b - 1];
         register_v0 = regs[1];
-    end 
+    end
 
     /* Write to register on positive edge */
     always_ff @(posedge clk) begin
@@ -30,7 +30,7 @@ module reg_file(
             end
         end 
         else if(!reset && write && write_addr != 0) begin
-            regs[write_addr - 1] <= data_in;     
+            regs[write_addr - 1] <= data_in;
         end 
     end
 

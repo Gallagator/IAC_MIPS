@@ -11,23 +11,23 @@ module mips_cpu_bus_generic_tb();
     logic active;
     logic[31:0] register_v0;
    
-    /* TODO SUPPLY READDATA IN LITTLE ENDIAN */ 
     logic[31:0] address;
+    logic[31:0] prev_address;
+
     logic write;
     logic read;
     logic waitrequest;
     logic[31:0] writedata;
-    logic[3:0] byteenable; // Need to consider this later.
+    logic[3:0] byteenable;
     logic[31:0] readdata;
 
+    logic[11:0] RAM_addr;
     /* program RAM ports */
-    logic[11:0] prog_addr;
     logic prog_read;
     logic prog_write;
     logic[31:0] prog_read_data;
    
     /* Stack RAM ports */
-    logic[11:0] stack_addr;
     logic stack_read;
     logic stack_write;
     logic[31:0] stack_read_data;
@@ -35,7 +35,7 @@ module mips_cpu_bus_generic_tb();
     int waitrequest_cycles;
 
     initial begin
-        waitrequest_cycles = 0; 
+        waitrequest_cycles = $urandom % MAX_WAIT_REQUEST_CYCLES + 1;
         reset = 0;
         clk = 0;
         #5;
@@ -50,12 +50,10 @@ module mips_cpu_bus_generic_tb();
             if(waitrequest_cycles == 0) begin
                 waitrequest = 0;
                 waitrequest_cycles = $urandom % MAX_WAIT_REQUEST_CYCLES + 1;
-                $display("waitrequest_cycles: %d", waitrequest_cycles);
             end
             else begin
                 waitrequest = 1;
             end
-
             #5;
             clk = !clk;
             #5;
@@ -82,13 +80,12 @@ module mips_cpu_bus_generic_tb();
         $finish;
     end
 
-    assign stack_addr = address[13:2];
-    assign prog_addr = address[13:2];
+    assign RAM_addr = address[13:2];
 
     always_comb begin
 
         // Is the address in the stack region.        
-        if(address < (4096 << 2)) begin
+        if(prev_address < (4096 << 2)) begin
             stack_read = read;
             stack_write = write;
             readdata = stack_read_data;
@@ -96,28 +93,30 @@ module mips_cpu_bus_generic_tb();
         else begin
             stack_read = 0;
             stack_write = 0;
-            readdata = 0;
         end
 
         // Is the address in the program region.
-        if(address >= 32'hBFC0_0000 && 
-           address < (32'hBFC0_0000 + (4096 << 2)) ) begin
+        if(prev_address >= 32'hBFC0_0000 && 
+           prev_address < (32'hBFC0_0000 + (4096 << 2)) ) begin
             prog_read = read;
             prog_write = write;
             readdata = prog_read_data;
         end 
         else begin
-            stack_read = 0;
-            stack_write = 0;
-            readdata = 0;
+            prog_read = 0;
+            prog_write = 0;
         end
 
+    end
+
+    always_ff @(posedge clk) begin
+        prev_address <= address; 
     end
 
     /* Addresses BASE_ADDRESS:BASE_ADDRESS+4095*/
     RAM_32x4096 #(RAM_INIT_FILE) program_region(
         .clk(clk),
-        .address(prog_addr),
+        .address(RAM_addr),
         .read(prog_read),
         .write(prog_write),
         .byteenable(byteenable),
@@ -127,7 +126,7 @@ module mips_cpu_bus_generic_tb();
     /* Addresses 0:4095 */
     RAM_32x4096 stack_region(
         .clk(clk),
-        .address(stack_addr),
+        .address(RAM_addr),
         .read(stack_read),
         .write(stack_write),
         .byteenable(byteenable),
