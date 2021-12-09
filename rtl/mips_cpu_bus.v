@@ -1,4 +1,46 @@
+<<<<<<< HEAD
 `include "package.v"
+=======
+// i1 <---- ir
+// i2 <---- ir_next
+// i3
+// Fetch, Decode, execute, memory_access, WB
+
+typedef enum logic[5:0] {
+    FUNCT_ADDU = 6'b10_0001,
+    FUNCT_JR   = 6'b00_1000,
+    FUNCT_AND  = 6'b10_0100,
+    FUNCT_OR   = 6'b10_0101,
+    FUNCT_XOR  = 6'b10_0110,
+    FUNCT_SUBU = 6'b10_0011
+} funct_t;
+
+typedef enum logic[1:0] {    /*3 bits for this?*/
+    STATE_FETCH = 0,
+    STATE_EXECUTE = 1,
+    STATE_MEMORY = 2,
+    STATE_WRITEBACK = 3
+} state_t;
+
+typedef enum logic[5:0] {
+    OPCODE_RTYPE = 6'b00_0000,
+    OPCODE_JAL   = 6'b00_0011,
+    OPCODE_J     = 6'b00_0010,
+    OPCODE_ADDIU = 6'b00_1001,
+    OPCODE_LW = 6'b10_0011,
+    OPCODE_SW = 6'b10_1011,
+    OPCODE_ANDI  = 6'b00_1100,
+    OPCODE_ORI   = 6'b00_1101,
+    OPCODE_XORI  = 6'b00_1110,
+    OPCODE_LB = 6'b10_0000
+} opcode_t;
+    
+typedef enum logic[1:0] {
+    RTYPE,
+    ITYPE,
+    JTYPE
+} instr_type_t;
+>>>>>>> Implemented signed immediate for addresses
 
 module mips_cpu_bus(
     /* Standard signals */
@@ -74,11 +116,12 @@ module mips_cpu_bus(
     /* itype */
     assign itype_rs        = effective_ir[25:21];
     assign itype_rt        = effective_ir[20:16];
-    assign itype_immediate = {16'b0, effective_ir[15:0]};
+    //assign itype_immediate = {16'b0, effective_ir[15:0]};
 
     /* jtype */
     assign jtype_address = effective_ir[25:0];
 
+    /* Bit addressing does not work in  always comb blocks. */
     always_comb begin
         
                 /* Set active signal */
@@ -105,7 +148,7 @@ module mips_cpu_bus(
             reg_file_rs = itype_rs;
             reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
-
+            //$display("Immediate constant: %x", itype_immediate);
             alu_b = itype_immediate;
         end
 
@@ -123,7 +166,8 @@ module mips_cpu_bus(
                         write = 0;
                         read = 1;
                         byteenable = 4'b1111;
-                        address = alu_out;  
+                        address = alu_out;
+                        //$display("CPU   address: %x", address);
                         reg_file_write = 0;
                     end
                     OPCODE_SW : begin
@@ -132,6 +176,13 @@ module mips_cpu_bus(
                         byteenable = 4'b1111;
                         address = alu_out;
                         writedata_eb = rt_val;
+                        reg_file_write = 0;
+                    end
+                    OPCODE_LB : begin
+                        write = 0;
+                        read = 1;
+                        //byteenable = 
+                        address = alu_out;
                         reg_file_write = 0;
                     end
                     default : begin
@@ -238,6 +289,13 @@ module mips_cpu_bus(
 
     toggle_endianness to_big(.a(readdata), .r(readdata_eb));
     toggle_endianness to_little(.a(writedata_eb), .r(writedata));
+    
+    sign_extension sign_extension(
+        .itype_immediate(effective_ir[15:0]),
+        .msb(effective_ir[15]),
+        .opcode(opcode),
+        .signed_itype_immediate(itype_immediate)
+    );
 
 endmodule
 
@@ -246,5 +304,6 @@ module toggle_endianness(
     output logic[31:0] r
 );
     assign r = {a[7:0], a[15:8], a[23:16], a[31:24]};
+
 endmodule
 
