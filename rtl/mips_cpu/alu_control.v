@@ -12,6 +12,12 @@ module alu_ctrl(
                 fncode = FUNCT_ADDU;
             OPCODE_LW:
                 fncode = FUNCT_ADDU;
+            OPCODE_ANDI :
+                fncode = FUNCT_AND;
+            OPCODE_ORI  :
+                fncode = FUNCT_OR;
+            OPCODE_XORI  :
+                fncode = FUNCT_XOR;
             OPCODE_RTYPE:
                 fncode = rtype_fncode;
             default:
