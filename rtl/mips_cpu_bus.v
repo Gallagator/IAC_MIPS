@@ -16,7 +16,9 @@ module mips_cpu_bus(
     output logic[3:0] byteenable,
     input logic[31:0] readdata
 );
-
+    /* readdata/writedata big endian */
+    logic[31:0] readdata_eb;
+    logic[31:0] writedata_eb;
 
     /* Program Counter, instruction register, state */
     logic[31: 0] pc /*, pc_next*/;
@@ -84,7 +86,7 @@ module mips_cpu_bus(
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
         effective_ir = (state == STATE_EXECUTE && !waitrequest_prev) 
-                       ? readdata : ir;
+                       ? readdata_eb : ir;
 
         if(opcode == OPCODE_RTYPE) begin 
             instr_type = RTYPE;
@@ -129,7 +131,7 @@ module mips_cpu_bus(
                         read = 0;
                         byteenable = 4'b1111;
                         address = alu_out;
-                        writedata = rt_val;
+                        writedata_eb = rt_val;
                         reg_file_write = 0;
                     end
                     default : begin
@@ -143,7 +145,7 @@ module mips_cpu_bus(
             STATE_MEMORY : begin
                 case(opcode)
                     OPCODE_LW : begin
-                        reg_file_data_in = readdata;
+                        reg_file_data_in = readdata_eb;
                         reg_file_write = 1;
                     end
                 endcase
@@ -173,7 +175,7 @@ module mips_cpu_bus(
 
                 end
                 STATE_EXECUTE : begin
-                    ir <= waitrequest_prev ? ir : readdata;
+                    ir <= waitrequest_prev ? ir : readdata_eb;
 
                     case(instr_type) 
                         RTYPE : begin
@@ -234,4 +236,15 @@ module mips_cpu_bus(
 
     alu alu(.a(rs_val), .b(alu_b), .fncode(alu_fncode), .r(alu_out));
 
+    toggle_endianness to_big(.a(readdata), .r(readdata_eb));
+    toggle_endianness to_little(.a(writedata_eb), .r(writedata));
+
 endmodule
+
+module toggle_endianness(
+    input logic[31:0] a,
+    output logic[31:0] r
+);
+    assign r = {a[7:0], a[15:8], a[23:16], a[31:24]};
+endmodule
+
