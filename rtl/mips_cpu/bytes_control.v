@@ -19,24 +19,31 @@ module bytes_control(
     assign fourth   = readdata_eb[31:24];
 
     always_comb begin
-        
-        case(lsb_bits)  // Will need to rethink this when implementing half words.
-            0 : begin
-                bytes_out = (opcode == OPCODE_LBU) ? {24'b0, first} : ( (first >> 7) ? {24'hFFFFFF, first} :  {24'b0, first});   // first >> 7 is the MSB.
-            end
-            1 : begin
-                bytes_out = (opcode == OPCODE_LBU) ? {24'b0, second} : ( (second >> 7) ? {24'hFFFFFF, second} : {24'b0, second});
-            end
-            //3 : half_word = {second, first};    // For half word instructions.
-            2 : begin
-                bytes_out = (opcode == OPCODE_LBU) ? {24'b0, third} : ( (third >> 7) ? {24'hFFFFFF, third} : {24'b0, third});
-            end
-            3 : begin
-                bytes_out = (opcode == OPCODE_LBU) ? {24'b0, fourth} : ( (fourth >> 7) ? {24'hFFFFFF, fourth} : {24'b0, fourth});
-            end
-            //12: half_word = {fourth, third};    // For half word instructions.
-            // 31: bytes_out = readdata_eb; Not needed.
-        endcase
+
+        if(opcode == OPCODE_LHU || opcode == OPCODE_LH) begin
+            
+            case(lsb_bits)
+                0: bytes_out = (opcode == OPCODE_LHU) ? {16'b0, second, first} : ( (second >> 7) ? {16'hFFFF, second, first} : {16'b0, second, first});
+                2: bytes_out = {fourth, third, 16'b0};
+            endcase
+
+        end
+        else begin 
+            case(lsb_bits)
+                0 : begin
+                    bytes_out = (opcode == OPCODE_LBU) ? {24'b0, first} : ( (first >> 7) ? {24'hFFFFFF, first} :  {24'b0, first});   // first >> 7 is the MSB.
+                end
+                1 : begin
+                    bytes_out = (opcode == OPCODE_LBU) ? {24'b0, second} : ( (second >> 7) ? {24'hFFFFFF, second} : {24'b0, second});
+                end
+                2 : begin
+                    bytes_out = (opcode == OPCODE_LBU) ? {24'b0, third} : ( (third >> 7) ? {24'hFFFFFF, third} : {24'b0, third});
+                end
+                3 : begin
+                    bytes_out = (opcode == OPCODE_LBU) ? {24'b0, fourth} : ( (fourth >> 7) ? {24'hFFFFFF, fourth} : {24'b0, fourth});
+                end
+            endcase
+        end
     end
 
 endmodule

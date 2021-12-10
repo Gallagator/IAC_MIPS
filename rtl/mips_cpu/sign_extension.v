@@ -10,11 +10,11 @@ module sign_extension(
 
     always_comb begin
         
-        if(opcode == OPCODE_LW || opcode == OPCODE_SW || opcode == OPCODE_LBU || opcode == OPCODE_LB) begin
-            signed_itype_immediate = msb ? {16'hFFFF, itype_immediate} : {16'b0, itype_immediate};
+        if(opcode == OPCODE_LW || opcode == OPCODE_SW || opcode == OPCODE_LBU || opcode == OPCODE_LB || opcode == OPCODE_LHU || opcode == OPCODE_LH) begin
+            signed_itype_immediate = msb ? {16'hFFFF, itype_immediate} : {16'b0, itype_immediate};  // Address calculations are signed.
         end
         else begin
-            signed_itype_immediate = {16'b0, itype_immediate};
+            signed_itype_immediate = {16'b0, itype_immediate};  // Unsigned Itype instructions.
         end
         
     end

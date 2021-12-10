@@ -26,6 +26,10 @@ module alu_ctrl(
                 fncode = FUNCT_XOR;
             OPCODE_RTYPE:
                 fncode = rtype_fncode;
+            OPCODE_LHU : 
+                fncode = FUNCT_ADDU;
+            OPCODE_LH : 
+                fncode = FUNCT_ADDU;
             default:
                 fncode = 6'b11_1111; 
         endcase
