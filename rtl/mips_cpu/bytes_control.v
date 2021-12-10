@@ -11,7 +11,6 @@ module bytes_control(
     logic[7:0] second;
     logic[7:0] third;
     logic[7:0] fourth;
-    //logic[15:0] half_word;
 
     assign first    = readdata_eb[7:0];
     assign second   = readdata_eb[15:8];
