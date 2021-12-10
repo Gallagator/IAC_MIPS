@@ -8,11 +8,15 @@ module alu_ctrl(
     always_comb begin
 
         case(opcode)        
-            OPCODE_ADDIU:
+            OPCODE_ADDIU :
                 fncode = FUNCT_ADDU;
-            OPCODE_SW:
+            OPCODE_SW :
                 fncode = FUNCT_ADDU;
-            OPCODE_LW:
+            OPCODE_LW :
+                fncode = FUNCT_ADDU;
+            OPCODE_LBU : 
+                fncode = FUNCT_ADDU;
+            OPCODE_LB : 
                 fncode = FUNCT_ADDU;
             OPCODE_ANDI :
                 fncode = FUNCT_AND;

@@ -34,7 +34,7 @@ module RAM_32x4096(
         byteenable[2] ? 8'hFF : 8'h00,
         byteenable[3] ? 8'hFF : 8'h00
     };
-    
+
     assign  masked_writedata = 
         (writedata & mask) | (memory[address] & (~mask));
 
@@ -47,4 +47,3 @@ module RAM_32x4096(
     end
 
 endmodule
-
