@@ -1,3 +1,5 @@
+`include "package.v"
+
 module mips_cpu_bus(
     /* Standard signals */
     input logic clk,
@@ -14,9 +16,6 @@ module mips_cpu_bus(
     output logic[3:0] byteenable,
     input logic[31:0] readdata
 );
-    logic[31:0] address_unaligned;
-    assign address = {address_unaligned[31:2], 2'b00};
-
     /* readdata/writedata big endian */
     logic[31:0] readdata_eb;
     logic[31:0] writedata_eb;
@@ -110,6 +109,8 @@ module mips_cpu_bus(
             reg_file_rs = rtype_rs;
             reg_file_rt = rtype_rt;
             reg_file_rd = rtype_rd;
+            reg_file_write = state == STATE_EXECUTE;
+            reg_file_data_in = alu_out;
             alu_a = immediate_shift ? extended_shamnt : rs_val;
             alu_b = rt_val;
             case(rtype_fncode)
@@ -157,32 +158,31 @@ module mips_cpu_bus(
                 reg_file_write = 0;
                 read = 1;
                 write = 0;
-                address_unaligned = pc;
+                address = pc;
                 byteenable = 4'b1111;
             end
             STATE_EXECUTE : begin
-
-                if(opcode == OPCODE_SW) begin
-                    write = 0; 
+                if(opcode == OPCODE_LW) begin
+                    write = 0;
+                    read = 1;
+                    byteenable = 4'b1111;
+                    address = alu_out;
+                    reg_file_write = 0;
+                end
+                else if(opcode == OPCODE_SW) begin
+                    write = 1; 
                     read = 0;
-                    address_unaligned = alu_out;
+                    byteenable = 4'b1111;
+                    address = alu_out;
                     writedata_eb = rt_val;
                     reg_file_write = 0;
                 end
-                else if(opcode == OPCODE_SB || opcode == OPCODE_SH) begin
-                    write = 0;
-                    read = 0;
-                    address_unaligned = alu_out;
-                    reg_file_write = 0;
-                    writedata_eb = loadstore_word;
-                    byteenable = bytes_byteenable;
-                end
-                else if(opcode == OPCODE_LW || opcode == OPCODE_LBU || opcode == OPCODE_LB || 
+                else if(opcode == OPCODE_LBU || opcode == OPCODE_LB || 
                         opcode == OPCODE_LHU || opcode == OPCODE_LH || 
                         opcode == OPCODE_LWL || opcode == OPCODE_LWR) begin     // Don't know if I can shorten this by putting it as default.
                     write = 0;
                     read = 1;
-                    address_unaligned = alu_out;
+                    address = alu_out;
                     reg_file_write = 0;
                     byteenable = bytes_byteenable;
                 end
@@ -192,31 +192,11 @@ module mips_cpu_bus(
                     reg_file_data_in = itype_immediate;
                     reg_file_write = 1;
                 end
-                else if(opcode == OPCODE_RTYPE) begin
-                    if(rtype_fncode == FUNCT_MFH) begin
-                        write = 0;  
-                        read = 0;
-                        reg_file_write = 1;
-                        reg_file_data_in = hi;
-                    end
-                    else if (rtype_fncode == FUNCT_MFL) begin
-                        write = 0;  
-                        read = 0;
-                        reg_file_write = 1;
-                        reg_file_data_in = lo;
-                    end
-                    else begin
-                        write = 0;  
-                        read = 0;
-                        reg_file_write = 1;
-                        reg_file_data_in = alu_out; //this guy is destroying my brain cellz
-                    end
-                end
                 else begin
                     write = 0;  
                     read = 0;
                     reg_file_write = 1;
-                    reg_file_data_in = alu_out; //this guy is destroying my brain cellz
+                    reg_file_data_in = alu_out;
                 end
 
             end
@@ -226,16 +206,6 @@ module mips_cpu_bus(
                     OPCODE_LW : begin
                         reg_file_data_in = readdata_eb;
                     end
-                    OPCODE_SW : begin
-                        write = 1;
-                    end
-                    OPCODE_SB : begin
-                        write = 1;
-                    end
-                    OPCODE_SH : begin
-                        write = 1;
-                    end
-
                     default : begin     // LBU, LB, LHU, LH, LWL, LWR
                         reg_file_data_in = loadstore_word;
                     end
@@ -270,7 +240,6 @@ module mips_cpu_bus(
 
                 end
                 STATE_EXECUTE : begin
-                    $display("EXEC, ir= %b", effective_ir);
                     ir <= waitrequest_prev ? ir : readdata_eb;
                     if(branch_delayed == BRANCH_DELAYED) begin
                         pc <= pc_branch;
@@ -316,9 +285,9 @@ module mips_cpu_bus(
                                     state <= STATE_MEMORY;
                                 end 
                             end
-                            else if(opcode == OPCODE_SW || opcode == OPCODE_SB || opcode == OPCODE_SH) begin
+                            else if(opcode == OPCODE_SW) begin
                                 if(!waitrequest) begin 
-                                    state <= STATE_MEMORY;
+                                    state <= STATE_FETCH;
                                 end
                             end 
                             else begin
@@ -387,7 +356,7 @@ module mips_cpu_bus(
     bytes_control bytes_control(
         .readdata_eb(readdata_eb),
         .opcode(opcode),
-        .lsb_bits(address_unaligned[1:0]),
+        .lsb_bits(address[1:0]),
         .bytes_out(loadstore_word),
         .rt_val_itype(rt_val),
         .byteenable(bytes_byteenable)
@@ -402,4 +371,3 @@ module toggle_endianness(
     assign r = {a[7:0], a[15:8], a[23:16], a[31:24]};
  
 endmodule
-
