@@ -27,18 +27,21 @@ typedef enum logic[1:0] {    /*3 bits for this?*/
 } state_t;
 
 typedef enum logic[5:0] {
-    OPCODE_RTYPE = 6'b00_0000,
-    OPCODE_JAL   = 6'b00_0011,
-    OPCODE_J     = 6'b00_0010,
-    OPCODE_ADDIU = 6'b00_1001,
-    OPCODE_LW = 6'b10_0011,
-    OPCODE_SW = 6'b10_1011,
-    OPCODE_ANDI  = 6'b00_1100,
-    OPCODE_ORI   = 6'b00_1101,
-    OPCODE_XORI  = 6'b00_1110,
-    OPCODE_LB   = 6'b10_0000,
-    OPCODE_SLTI = 6'b00_1010,
-    OPCODE_SLTIU = 6'b00_1011
+    OPCODE_RTYPE    = 6'b00_0000,
+    OPCODE_JAL      = 6'b00_0011,
+    OPCODE_J        = 6'b00_0010,
+    OPCODE_ADDIU    = 6'b00_1001,
+    OPCODE_LW       = 6'b10_0011,
+    OPCODE_SW       = 6'b10_1011,
+    OPCODE_ANDI     = 6'b00_1100,
+    OPCODE_ORI      = 6'b00_1101,
+    OPCODE_XORI     = 6'b00_1110,
+    OPCODE_SLTI     = 6'b00_1010,
+    OPCODE_SLTIU    = 6'b00_1011,
+    OPCODE_LBU      = 6'b10_0100,
+    OPCODE_LB       = 6'b10_0000,
+    OPCODE_LHU      = 6'b10_0101,
+    OPCODE_LH       = 6'b10_0001
 } opcode_t;
     
 typedef enum logic[1:0] {

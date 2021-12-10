@@ -162,7 +162,25 @@ module mips_cpu_bus(
                         reg_file_write = 0;
                         byteenable = 4'b1111;   // We make a load word request and then process the word inside the CPU to output the correct byte.
                                                 // This is because it is not too clear whether then RAM will return the word or the byte.
-                                                // This method would not care what the RAM does with LBU.
+                                                // This method would not care what the RAM does with LB.
+                    end
+                    OPCODE_LHU : begin
+                        write = 0;
+                        read = 1;
+                        address = alu_out;
+                        reg_file_write = 0;
+                        byteenable = 4'b1111;   // We make a load word request and then process the word inside the CPU to output the correct byte.
+                                                // This is because it is not too clear whether then RAM will return the word or the byte.
+                                                // This method would not care what the RAM does with LHU.
+                    end
+                    OPCODE_LH : begin
+                        write = 0;
+                        read = 1;
+                        address = alu_out;
+                        reg_file_write = 0;
+                        byteenable = 4'b1111;   // We make a load word request and then process the word inside the CPU to output the correct byte.
+                                                // This is because it is not too clear whether then RAM will return the word or the byte.
+                                                // This method would not care what the RAM does with LH.
                     end
                     default : begin
                         write = 0;  
@@ -182,6 +200,12 @@ module mips_cpu_bus(
                         reg_file_data_in = bytes_out;
                     end
                     OPCODE_LB : begin
+                        reg_file_data_in = bytes_out;
+                    end
+                    OPCODE_LHU : begin
+                        reg_file_data_in = bytes_out;   // Will need to make this the default.
+                    end
+                    OPCODE_LH : begin
                         reg_file_data_in = bytes_out;
                     end
                 endcase
@@ -222,7 +246,7 @@ module mips_cpu_bus(
                         end 
                         ITYPE : begin
                             /* Will also have to include other load instrs */
-                            if( (opcode == OPCODE_LW || opcode == OPCODE_LBU) || (opcode == OPCODE_LB) ) begin
+                            if( opcode == OPCODE_LW || opcode == OPCODE_LBU || opcode == OPCODE_LB || opcode == OPCODE_LH || opcode == OPCODE_LHU ) begin
                                 
                                 if(!waitrequest) begin
                                     state <= STATE_MEMORY;
