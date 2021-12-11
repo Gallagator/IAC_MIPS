@@ -8,7 +8,8 @@ typedef enum logic[5:0] {
     FUNCT_AND  = 6'b10_0100,
     FUNCT_OR   = 6'b10_0101,
     FUNCT_XOR  = 6'b10_0110,
-    FUNCT_SUBU = 6'b10_0011
+    FUNCT_SUBU = 6'b10_0011,
+    FUNCT_SLL  = 6'b00_0000
 } funct_t;
 
 typedef enum logic[1:0] {    /*3 bits for this?*/
@@ -31,7 +32,9 @@ typedef enum logic[5:0] {
     OPCODE_LBU      = 6'b10_0100,
     OPCODE_LB       = 6'b10_0000,
     OPCODE_LHU      = 6'b10_0101,
-    OPCODE_LH       = 6'b10_0001
+    OPCODE_LH       = 6'b10_0001,
+    OPCODE_LUI      = 6'b00_1111,
+    OPCODE_LWL      = 6'b10_0010
 } opcode_t;
     
 typedef enum logic[1:0] {
