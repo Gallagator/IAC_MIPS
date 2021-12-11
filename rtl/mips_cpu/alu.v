@@ -6,7 +6,9 @@ module alu(
     input funct_t fncode,
     output logic[31:0] r
 );
-
+    logic msb_a, msb_b;
+    assign msb_a = a[31];
+    assign msb_b = b[31];
     always_comb begin
         case(fncode) 
             FUNCT_ADDU : r = a + b;
@@ -20,6 +22,12 @@ module alu(
             FUNCT_SRLV : r = b >> a;
             FUNCT_SRA  : r = b >>> a;
             FUNCT_SRAV : r = b >>> a;
+            FUNCT_SLTU : r = a < b ? 1 : 0;
+            FUNCT_SLT  : begin
+                r =0;
+                if(msb_a && !msb_b) r = 1;
+                if(!(msb_a ^ msb_b)) r = a < b ? 1 : 0;
+            end
             default : r = 0;
         endcase
     end

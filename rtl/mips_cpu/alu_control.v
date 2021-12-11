@@ -20,6 +20,10 @@ module alu_ctrl(
                 fncode = FUNCT_OR;
             OPCODE_XORI  :
                 fncode = FUNCT_XOR;
+            OPCODE_SLTI :
+                fncode = FUNCT_SLT;
+            OPCODE_SLTIU :
+                fncode = FUNCT_SLTU;
             OPCODE_RTYPE:
                 fncode = rtype_fncode;
             default:
