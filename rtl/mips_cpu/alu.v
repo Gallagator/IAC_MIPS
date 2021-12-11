@@ -20,14 +20,10 @@ module alu(
             FUNCT_SLLV : r = b << a;
             FUNCT_SRL  : r = b >> a;
             FUNCT_SRLV : r = b >> a;
-            FUNCT_SRA  : r = b >>> a;
-            FUNCT_SRAV : r = b >>> a;
+            FUNCT_SRA  : r = $signed(b) >>> a;
+            FUNCT_SRAV : r = $signed(b) >>> a;
             FUNCT_SLTU : r = a < b ? 1 : 0;
-            FUNCT_SLT  : begin
-                r =0;
-                if(msb_a && !msb_b) r = 1;
-                if(!(msb_a ^ msb_b)) r = a < b ? 1 : 0;
-            end
+            FUNCT_SLT  : r = $signed(a) < $signed(b) ? 1 : 0;
             default : r = 0;
         endcase
     end
