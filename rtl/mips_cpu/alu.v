@@ -14,6 +14,10 @@ module alu(
             FUNCT_OR   : r = a | b;
             FUNCT_XOR  : r = a ^ b;
             FUNCT_SUBU : r = a - b;
+            FUNCT_SLL  : r = b << a;
+            FUNCT_SLLV : r = b << a;
+            FUNCT_SRL  : r = b >> a;
+            FUNCT_SRLV : r = b >> a;
             default : r = 0;
         endcase
     end

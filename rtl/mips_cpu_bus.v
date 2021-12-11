@@ -39,6 +39,7 @@ module mips_cpu_bus(
     /* ALU */
     logic[31:0] alu_out;
     logic[5:0] alu_fncode;
+    logic[31:0] alu_a;
     logic[31:0] alu_b;
 
     /* Instruction decode */
@@ -50,7 +51,10 @@ module mips_cpu_bus(
     logic[4:0] rtype_rt;
     logic[4:0] rtype_rd;
     logic[4:0] rtype_shamnt;
+    logic[31:0] extended_shamnt;
+    logic immediate_shift;
     logic[5:0] rtype_fncode;
+    
 
     /* itype instructions */
     logic[4:0] itype_rs;
@@ -69,6 +73,7 @@ module mips_cpu_bus(
     assign rtype_rt     = effective_ir[20:16];
     assign rtype_rd     = effective_ir[15:11];
     assign rtype_shamnt = effective_ir[10:6];
+    assign extended_shamnt = {28'b0, rtype_shamnt};
     assign rtype_fncode = effective_ir[5:0];
 
     /* itype */
@@ -89,12 +94,17 @@ module mips_cpu_bus(
                        ? readdata_eb : ir;
 
         if(opcode == OPCODE_RTYPE) begin 
+            immediate_shift = 0;
+            if(rtype_fncode == FUNCT_SLL || rtype_fncode == FUNCT_SRL)begin
+                immediate_shift = 1;             
+            end
             instr_type = RTYPE;
             reg_file_rs = rtype_rs;
             reg_file_rt = rtype_rt;
             reg_file_rd = rtype_rd;
             reg_file_write = state == STATE_EXECUTE;
             reg_file_data_in = alu_out;
+            alu_a = immediate_shift ? extended_shamnt : rs_val;
             alu_b = rt_val;
         end
         else if(opcode == OPCODE_J || opcode == OPCODE_JAL) begin
@@ -105,6 +115,7 @@ module mips_cpu_bus(
             reg_file_rs = itype_rs;
             reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
+            alu_a = rs_val;
             alu_b = itype_immediate;
         end
 
@@ -240,7 +251,7 @@ module mips_cpu_bus(
                       .register_v0(register_v0)
     );
 
-    alu alu(.a(rs_val), .b(alu_b), .fncode(alu_fncode), .r(alu_out));
+    alu alu(.a(alu_a), .b(alu_b), .fncode(alu_fncode), .r(alu_out));
 
     toggle_endianness to_big(.a(readdata), .r(readdata_eb));
     toggle_endianness to_little(.a(writedata_eb), .r(writedata));
