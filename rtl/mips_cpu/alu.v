@@ -18,6 +18,8 @@ module alu(
             FUNCT_SLLV : r = b << a;
             FUNCT_SRL  : r = b >> a;
             FUNCT_SRLV : r = b >> a;
+            FUNCT_SRA  : r = b >>> a;
+            FUNCT_SRAV : r = b >>> a;
             default : r = 0;
         endcase
     end

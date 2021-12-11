@@ -73,7 +73,7 @@ module mips_cpu_bus(
     assign rtype_rt     = effective_ir[20:16];
     assign rtype_rd     = effective_ir[15:11];
     assign rtype_shamnt = effective_ir[10:6];
-    assign extended_shamnt = {28'b0, rtype_shamnt};
+    assign extended_shamnt = {27'b0, rtype_shamnt};
     assign rtype_fncode = effective_ir[5:0];
 
     /* itype */
@@ -95,7 +95,7 @@ module mips_cpu_bus(
 
         if(opcode == OPCODE_RTYPE) begin 
             immediate_shift = 0;
-            if(rtype_fncode == FUNCT_SLL || rtype_fncode == FUNCT_SRL)begin
+            if(rtype_fncode == FUNCT_SLL || rtype_fncode == FUNCT_SRL | rtype_fncode == FUNCT_SRA)begin
                 immediate_shift = 1;             
             end
             instr_type = RTYPE;
