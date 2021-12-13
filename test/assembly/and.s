@@ -6,6 +6,6 @@ main:
 	.set	noreorder
     addiu $3, 3278
     addiu $4, 1754
-    and   $2, $3, $4
     jr $0
+    and   $2, $3, $4
 .end	main

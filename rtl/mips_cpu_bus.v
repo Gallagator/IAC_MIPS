@@ -21,7 +21,8 @@ module mips_cpu_bus(
     logic[31:0] writedata_eb;
 
     /* Program Counter, instruction register, state */
-    logic[31: 0] pc /*, pc_next*/;
+    logic[31: 0] pc, pc_branch;
+    logic branch_delayed;
     /* TODO REMEMBER TO SET IR_NEXT, AND EFFECTIVE_IR TO THE CORRECT INSTR! */ 
     logic[31: 0] ir/*, ir_next */, effective_ir;
     state_t state;
@@ -165,6 +166,8 @@ module mips_cpu_bus(
        
         if(reset) begin
             pc <= 32'hBFC0_0000;
+            pc_branch <= 0;
+            branch_delayed <= 0;
             state <= STATE_FETCH;
         end
         else if(active) begin
@@ -175,7 +178,13 @@ module mips_cpu_bus(
                      * read from yet. Further, it won't do anything if 
                      * it's still waiting */ 
                     if(!waitrequest) begin
-                        pc <= pc + 4;
+                        if(branch_delayed) begin
+                            pc <= pc_branch;
+                            branch_delayed <= 0;
+                        end
+                        else begin 
+                            pc <= pc + 4;
+                        end
                         state <= STATE_EXECUTE;
                     end
 
@@ -186,7 +195,8 @@ module mips_cpu_bus(
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
-                                pc <= rtype_rs;
+                                pc_branch <= rtype_rs;
+                                branch_delayed <= 1;
                             end
                             state <= STATE_FETCH;
                         end 

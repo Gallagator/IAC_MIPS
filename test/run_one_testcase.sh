@@ -2,7 +2,6 @@
 
 TESTCASE="$1"
 EXPECTED=$(cat expected/${TESTCASE}.txt)
->&2 echo "Testing with ${TESTCASE}"
 
 # Compile cpu along with testbench. Load the ram file and the expected result 
 # into the testbench.
@@ -14,7 +13,6 @@ iverilog -Wall -g2012 \
     -Pmips_cpu_bus_generic_tb.EXPECTED_REG_V0=${EXPECTED} \
     -o  simulator/mips_cpu_bus_tb_${TESTCASE}.sim
 
->&2 echo "Running test-bench"
 
 # Run and put stdout in a file
 set +e
@@ -24,8 +22,8 @@ RESULT=$?
 set -e
 
 if [[ ${RESULT} -ne 0 ]] ; then
-   echo "    ${TESTCASE}, FAIL"
+   echo "${TESTCASE}, FAIL"
    exit
 fi
 
-echo "    ${TESTCASE} PASS"
+echo "${TESTCASE} PASS"
