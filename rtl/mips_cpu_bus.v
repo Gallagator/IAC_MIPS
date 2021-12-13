@@ -94,10 +94,10 @@ module mips_cpu_bus(
                        ? readdata_eb : ir;
 
         if(opcode == OPCODE_RTYPE) begin 
-            immediate_shift = 0;
-            if(rtype_fncode == FUNCT_SLL || rtype_fncode == FUNCT_SRL | rtype_fncode == FUNCT_SRA)begin
-                immediate_shift = 1;             
-            end
+            immediate_shift = rtype_fncode == FUNCT_SLL || 
+                              rtype_fncode == FUNCT_SRL || 
+                              rtype_fncode == FUNCT_SRA;
+
             instr_type = RTYPE;
             reg_file_rs = rtype_rs;
             reg_file_rt = rtype_rt;
