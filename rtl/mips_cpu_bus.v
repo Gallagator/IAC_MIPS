@@ -60,8 +60,8 @@ module mips_cpu_bus(
     logic[4:0] itype_rs;
     logic[4:0] itype_rt;
     logic[31:0] itype_immediate;
-    logic[31:0] bytes_out;  // Could use a better name.
-    logic[3:0] bytes_byteenable;
+    logic[31:0] loadstore_word; // bytes_control output.
+    logic[3:0] bytes_byteenable;    // bytes_control output.
 
     /* jtype_instructions */
     logic[25:0] jtype_address;
@@ -147,7 +147,8 @@ module mips_cpu_bus(
                     reg_file_write = 0;
                 end
                 else if(opcode == OPCODE_LBU || opcode == OPCODE_LB || 
-                        opcode == OPCODE_LHU || opcode == OPCODE_LH) begin 
+                        opcode == OPCODE_LHU || opcode == OPCODE_LH || 
+                        opcode == OPCODE_LWL || opcode == OPCODE_LWR) begin     // Don't know if I can shorten this by putting it as default.
                     write = 0;
                     read = 1;
                     address = alu_out;
@@ -174,8 +175,8 @@ module mips_cpu_bus(
                     OPCODE_LW : begin
                         reg_file_data_in = readdata_eb;
                     end
-                    default : begin     // LBU, LB, LHU, LH
-                        reg_file_data_in = bytes_out;
+                    default : begin     // LBU, LB, LHU, LH, LWL, LWR
+                        reg_file_data_in = loadstore_word;
                     end
                 endcase
             end
@@ -215,8 +216,10 @@ module mips_cpu_bus(
                         end 
                         ITYPE : begin
                             /* Will also have to include other load instrs */
-                            if( opcode == OPCODE_LW || opcode == OPCODE_LBU || opcode == OPCODE_LB 
-                                || opcode == OPCODE_LH || opcode == OPCODE_LHU ) begin
+                            if( opcode == OPCODE_LW || opcode == OPCODE_LBU || 
+                                opcode == OPCODE_LB || opcode == OPCODE_LH || 
+                                opcode == OPCODE_LHU || opcode == OPCODE_LWL || 
+                                opcode == OPCODE_LWR ) begin    // Don't know I could make this shorter by putting it into the else statement.
                                 
                                 if(!waitrequest) begin
                                     state <= STATE_MEMORY;
@@ -280,7 +283,8 @@ module mips_cpu_bus(
         .readdata_eb(readdata_eb),
         .opcode(opcode),
         .lsb_bits(address[1:0]),
-        .bytes_out(bytes_out),
+        .bytes_out(loadstore_word),
+        .rt_val_itype(rt_val),
         .byteenable(bytes_byteenable)
     );
 
