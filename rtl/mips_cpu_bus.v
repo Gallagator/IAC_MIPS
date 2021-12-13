@@ -186,18 +186,17 @@ module mips_cpu_bus(
                 STATE_EXECUTE : begin
                     ir <= waitrequest_prev ? ir : readdata_eb;
 
+                    if(branch_delayed == BRANCH_DELAYED) begin
+                        branch_delayed = BRANCH_NONE;
+                        pc <= pc_branch;
+                    end
+
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
                                 pc_branch <= rtype_rs;
                                 branch_delayed <= BRANCH_DELAYED;
                             end
-
-                            if(branch_delayed == BRANCH_DELAYED) begin
-                                branch_delayed = BRANCH_NONE;
-                                pc <= pc_branch;
-                            end
-
                             state <= STATE_FETCH;
                         end 
                         ITYPE : begin
