@@ -3,7 +3,6 @@
 TESTNAME="$1"
 TMP_FILE=$(basename TESTNAME)
 
-
 # Assemble to an object file using mips1 assembly. Ensure it is in little endian
 # format.
 mips-linux-gnu-gcc -march=mips1 -mfp32 -O0 -c -EL assembly/${TESTNAME}.s -o ${TMP_FILE}.o

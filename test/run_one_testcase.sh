@@ -29,3 +29,4 @@ if [[ ${RESULT} -ne 0 ]] ; then
 fi
 
 echo "${TESTCASE} ${INSTR} Pass"
+
