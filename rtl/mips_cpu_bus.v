@@ -23,8 +23,8 @@ module mips_cpu_bus(
     /* Program Counter, instruction register, state */
     logic[31: 0] pc, pc_branch;
     branch_delay_state_t branch_delayed;
-    /* TODO REMEMBER TO SET IR_NEXT, AND EFFECTIVE_IR TO THE CORRECT INSTR! */ 
-    logic[31: 0] ir/*, ir_next */, effective_ir;
+
+    logic[31: 0] ir, effective_ir;
     state_t state;
 
     /* Register file outputs */  
@@ -194,9 +194,6 @@ module mips_cpu_bus(
                             end
 
                             if(branch_delayed == BRANCH_DELAYED) begin
-                                branch_delayed = BRANCH_TAKE;
-                            end
-                            else if(branch_delayed == BRANCH_TAKE) begin
                                 branch_delayed = BRANCH_NONE;
                                 pc <= pc_branch;
                             end
