@@ -37,4 +37,10 @@ typedef enum logic[1:0] {
     JTYPE
 } instr_type_t;
 
+typedef enum logic[2:0] {
+    BRANCH_NONE,
+    BRANCH_DELAYED,
+    BRANCH_TAKE
+} branch_delay_state_t;
+
 `endif

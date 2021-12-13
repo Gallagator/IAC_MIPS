@@ -22,7 +22,7 @@ module mips_cpu_bus(
 
     /* Program Counter, instruction register, state */
     logic[31: 0] pc, pc_branch;
-    logic branch_delayed;
+    branch_delay_state_t branch_delayed;
     /* TODO REMEMBER TO SET IR_NEXT, AND EFFECTIVE_IR TO THE CORRECT INSTR! */ 
     logic[31: 0] ir/*, ir_next */, effective_ir;
     state_t state;
@@ -167,7 +167,7 @@ module mips_cpu_bus(
         if(reset) begin
             pc <= 32'hBFC0_0000;
             pc_branch <= 0;
-            branch_delayed <= 0;
+            branch_delayed <= BRANCH_NONE;
             state <= STATE_FETCH;
         end
         else if(active) begin
@@ -178,13 +178,7 @@ module mips_cpu_bus(
                      * read from yet. Further, it won't do anything if 
                      * it's still waiting */ 
                     if(!waitrequest) begin
-                        if(branch_delayed) begin
-                            pc <= pc_branch;
-                            branch_delayed <= 0;
-                        end
-                        else begin 
-                            pc <= pc + 4;
-                        end
+                        pc <= pc + 4;
                         state <= STATE_EXECUTE;
                     end
 
@@ -196,8 +190,17 @@ module mips_cpu_bus(
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
                                 pc_branch <= rtype_rs;
-                                branch_delayed <= 1;
+                                branch_delayed <= BRANCH_DELAYED;
                             end
+
+                            if(branch_delayed == BRANCH_DELAYED) begin
+                                branch_delayed = BRANCH_TAKE;
+                            end
+                            else if(branch_delayed == BRANCH_TAKE) begin
+                                branch_delayed = BRANCH_NONE;
+                                pc <= pc_branch;
+                            end
+
                             state <= STATE_FETCH;
                         end 
                         ITYPE : begin
