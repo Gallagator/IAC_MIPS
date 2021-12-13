@@ -5,6 +5,6 @@
 main:
 	.set	noreorder
     addiu $3, 91
-    ori   $2, $3, 54
     jr $0
+    ori   $2, $3, 54
 .end	main

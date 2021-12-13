@@ -5,6 +5,6 @@
 main:
 	.set	noreorder
     addiu $3, 1422
-    xori   $2, $3, 843
     jr $0
+    xori   $2, $3, 843
 .end	main

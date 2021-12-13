@@ -194,7 +194,7 @@ module mips_cpu_bus(
             pc_branch <= 0;
             branch_delayed <= BRANCH_NONE;
         end
-        else if(active) begin
+        else if(active || state != STATE_FETCH) begin
             case(state)  
                 STATE_FETCH : begin
                     //reg_file_write <= 0;

@@ -6,6 +6,6 @@ main:
 	.set	noreorder
     addiu $3, 15
     addiu $4, 16
-    sltu   $2, $3, $4
     jr $0
+    sltu   $2, $3, $4
 .end	main

@@ -5,6 +5,6 @@
 main:
 	.set	noreorder
     addiu $3, 378
-    srl   $2, $3, 3
     jr $0
+    srl   $2, $3, 3
 .end	main
