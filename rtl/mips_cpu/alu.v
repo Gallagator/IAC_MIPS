@@ -10,6 +10,7 @@ module alu(
     assign msb_a = a[31];
     assign msb_b = b[31];
     always_comb begin
+        
         case(fncode) 
             FUNCT_ADDU : r = a + b;
             FUNCT_AND  : r = a & b;
@@ -26,6 +27,7 @@ module alu(
             FUNCT_SLT  : r = $signed(a) < $signed(b) ? 1 : 0;
             default : r = 0;
         endcase
+        
     end
 
 
