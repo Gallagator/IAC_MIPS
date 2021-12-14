@@ -141,7 +141,7 @@ module mips_cpu_bus(
                     reg_file_write = 0;
                 end
                 else if(opcode == OPCODE_SW) begin
-                    write = 1; 
+                    write = 0; 
                     read = 0;
                     byteenable = 4'b1111;
                     address = alu_out;
@@ -177,6 +177,9 @@ module mips_cpu_bus(
                     OPCODE_LW : begin
                         reg_file_data_in = readdata_eb;
                     end
+                    OPCODE_SW : begin
+                        write = 1;
+                    end
                     default : begin     // LBU, LB, LHU, LH, LWL, LWR
                         reg_file_data_in = loadstore_word;
                     end
@@ -184,23 +187,6 @@ module mips_cpu_bus(
             end
         endcase
 
-    end
-
-    always @(state) begin
-        case(state)
-            STATE_FETCH: $display("----------------------------------------\nSTATE FETCH");
-            STATE_EXECUTE: $display("STATE EXEC");
-            STATE_MEMORY: $display("STATE MEMORY");
-        endcase
-    end
-
-    always @(opcode) begin
-        case(opcode)
-            OPCODE_ADDIU: $display("ADDIU");
-            OPCODE_SW: $display("STORE WORD");
-            OPCODE_LW: $display("LOAD WORD");
-            OPCODE_RTYPE: $display("JUMP REGISTER");
-        endcase
     end
 
     always @(posedge clk) begin
@@ -227,7 +213,6 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     ir <= waitrequest_prev ? ir : readdata_eb;
-                    
                     if(branch_delayed == BRANCH_DELAYED) begin
                         pc <= pc_branch;
                         branch_delayed <= BRANCH_NONE;
@@ -254,7 +239,7 @@ module mips_cpu_bus(
                             end
                             else if(opcode == OPCODE_SW) begin
                                 if(!waitrequest) begin 
-                                    state <= STATE_FETCH;
+                                    state <= STATE_MEMORY;
                                 end
                             end 
                             else begin
