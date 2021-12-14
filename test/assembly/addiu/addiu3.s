@@ -4,6 +4,6 @@
 	.ent	main
 main:
     .set	noreorder
-    addiu $2, $3, 0xFFFF
+    addiu $2, $3, -1
     jr $0
 .end	main
