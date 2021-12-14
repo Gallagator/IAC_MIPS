@@ -21,9 +21,10 @@ module mips_cpu_bus(
     logic[31:0] writedata_eb;
 
     /* Program Counter, instruction register, state */
-    logic[31: 0] pc /*, pc_next*/;
-    /* TODO REMEMBER TO SET IR_NEXT, AND EFFECTIVE_IR TO THE CORRECT INSTR! */ 
-    logic[31: 0] ir/*, ir_next */, effective_ir;
+    logic[31: 0] pc, pc_branch;
+    branch_delay_state_t branch_delayed;
+
+    logic[31: 0] ir, effective_ir;
     state_t state;
 
     /* Register file outputs */  
@@ -87,9 +88,10 @@ module mips_cpu_bus(
 
     /* Bit addressing does not work in  always comb blocks. */
     always_comb begin
-
-                /* Set active signal */
-        active = pc != 0;
+        
+        /* Set active signal. pc must not be 0 and instruction must not 
+         * have finished. */
+        active = pc != 0 || state != STATE_FETCH;
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
         effective_ir = (state == STATE_EXECUTE && !waitrequest_prev) 
@@ -190,6 +192,8 @@ module mips_cpu_bus(
         if(reset) begin
             pc <= 32'hBFC0_0000;
             state <= STATE_FETCH;
+            pc_branch <= 0;
+            branch_delayed <= BRANCH_NONE;
         end
         else if(active) begin
             case(state)  
@@ -206,11 +210,17 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     ir <= waitrequest_prev ? ir : readdata_eb;
+                    
+                    if(branch_delayed == BRANCH_DELAYED) begin
+                        pc <= pc_branch;
+                        branch_delayed <= BRANCH_NONE;
+                    end
 
                     case(instr_type) 
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
-                                pc <= rtype_rs;
+                                pc_branch <= rtype_rs;
+                                branch_delayed <= BRANCH_DELAYED;
                             end
                             state <= STATE_FETCH;
                         end 

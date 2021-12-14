@@ -6,6 +6,6 @@ main:
 	.set	noreorder
     addiu $3, 1422
     addiu $4, 843
-    xor   $2, $3, $4
     jr $0
+    xor   $2, $3, $4
 .end	main

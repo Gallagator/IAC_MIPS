@@ -4,6 +4,6 @@
 	.ent	main
 main:
 	.set	noreorder
-    lui     $2, 0xFFFF
     jr      $0
+    lui     $2, 0xFFFF
 .end	main

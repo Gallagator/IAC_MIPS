@@ -2,7 +2,7 @@ module mips_cpu_bus_generic_tb();
     parameter RAM_INIT_FILE = "";
     parameter EXPECTED_REG_V0 = -1213;
     parameter TIMEOUT_CYCLES = 50_000;
-    parameter MAX_WAIT_REQUEST_CYCLES = 10;
+    parameter MAX_WAIT_REQUEST_CYCLES = 6;
     
     logic clk;
     logic reset;
