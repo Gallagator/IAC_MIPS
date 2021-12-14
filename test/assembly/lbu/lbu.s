@@ -8,7 +8,7 @@ main:
     addiu $5, $0, 0x8
     sw    $4, -4($5)    /* mem addr is 4 = 8 - 4 */
     lw    $2, -4($5)    /* mem addr is 4 = 8 - 4 */
-    lbu   $2, -4($5)    
     jr $0
+    lbu   $2, -4($5)    
 .end	main
 

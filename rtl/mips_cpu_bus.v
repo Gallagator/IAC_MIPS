@@ -89,8 +89,9 @@ module mips_cpu_bus(
     /* Bit addressing does not work in  always comb blocks. */
     always_comb begin
         
-        /* Set active signal */
-        active = pc != 0;
+        /* Set active signal. pc must not be 0 and instruction must not 
+         * have finished. */
+        active = pc != 0 || state != STATE_FETCH;
         /* Decoding */
         /* Grabs the instruction that has just been fetched. */
         effective_ir = (state == STATE_EXECUTE && !waitrequest_prev) 
@@ -194,7 +195,7 @@ module mips_cpu_bus(
             pc_branch <= 0;
             branch_delayed <= BRANCH_NONE;
         end
-        else if(active || state != STATE_FETCH) begin
+        else if(active) begin
             case(state)  
                 STATE_FETCH : begin
                     //reg_file_write <= 0;
