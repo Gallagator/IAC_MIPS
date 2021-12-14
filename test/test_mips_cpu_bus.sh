@@ -1,6 +1,7 @@
 #!/bin/bash
 
-TESTCASES="machine_code/*.hex.txt"
+RTL_DIR="$1"
+TESTCASES="test/machine_code/*.hex.txt"
 
 mkdir -p output
 mkdir -p simulator
@@ -9,5 +10,5 @@ mkdir -p simulator
 for i in ${TESTCASES} ; do
     TESTNAME=$(basename ${i} .hex.txt)
 
-    ./run_one_testcase.sh ${TESTNAME}
+    ./test/run_one_testcase.sh ${TESTNAME} ${RTL_DIR}
 done

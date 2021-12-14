@@ -1,10 +1,15 @@
 #!/bin/bash
 
-TESTCASES="assembly/*.s"
+TESTCASES="assembly/*"
 
-for i in ${TESTCASES} ; do
-    TESTNAME=$(basename ${i} .s)
+for INSTR in ${TESTCASES} ; do
+    TESTCASES="${INSTR}/*.s"
+    for TESTCASE in ${TESTCASES} ; do
+        TESTNAME=$(basename ${TESTCASE} .s)
+        DIR=$(basename ${INSTR})
+        mkdir -p machine_code/${DIR}
+        ./assemble_one_test_case.sh ${DIR}/${TESTNAME}
+    done
         
-    ./assemble_one_test_case.sh ${TESTNAME}
 done
 
