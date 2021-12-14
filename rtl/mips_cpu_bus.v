@@ -186,6 +186,23 @@ module mips_cpu_bus(
 
     end
 
+    always @(state) begin
+        case(state)
+            STATE_FETCH: $display("----------------------------------------\nSTATE FETCH");
+            STATE_EXECUTE: $display("STATE EXEC");
+            STATE_MEMORY: $display("STATE MEMORY");
+        endcase
+    end
+
+    always @(opcode) begin
+        case(opcode)
+            OPCODE_ADDIU: $display("ADDIU");
+            OPCODE_SW: $display("STORE WORD");
+            OPCODE_LW: $display("LOAD WORD");
+            OPCODE_RTYPE: $display("JUMP REGISTER");
+        endcase
+    end
+
     always @(posedge clk) begin
         waitrequest_prev <= waitrequest;
        
