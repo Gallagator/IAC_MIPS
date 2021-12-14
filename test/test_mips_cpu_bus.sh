@@ -1,7 +1,13 @@
 #!/bin/bash
 
 RTL_DIR="$1"
-INSTRS="test/machine_code/*"
+INSTR_TO_TEST="$2"
+
+if [${INSTR_TO_TEST} -ne ""] ; then
+    INSTRS="test/machine_code/*"
+else
+    INSTRS="test/machine_code/${INSTR_TO_TEST}"
+fi
 
 mkdir -p output
 mkdir -p simulator
