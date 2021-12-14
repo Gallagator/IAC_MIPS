@@ -8,8 +8,8 @@ main:
     addiu $5, $0, 0x30
     sw    $4, 8($5)
     lw    $2, 8($5)
-    addu  $2, $2, $5
-    sw    $2, 4($5)
+    addu  $3, $2, $5
+    sw    $3, 4($5)
     jr $0
     lw    $2, 4($5)
 .end	main
