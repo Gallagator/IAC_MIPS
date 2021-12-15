@@ -95,16 +95,16 @@ module bytes_control(
                     byteenable = 4'b1111; 
                 end
                 1: begin    // In spec it says to ignore this, but included it for completeness.
-                    bytes_out = {third, second, first, rt_first};
-                    byteenable = 4'b0111; 
+                    bytes_out = {rt_fourth, fourth, third, second};
+                    byteenable = 4'b1110; 
                 end
                 2: begin
-                    bytes_out = {second, first, rt_second, rt_first};
-                    byteenable = 4'b0011; 
+                    bytes_out = {rt_fourth, rt_third, fourth, third};
+                    byteenable = 4'b1100; 
                 end
                 3: begin
-                    bytes_out = {first, rt_third, rt_second, rt_first};
-                    byteenable = 4'b0001; 
+                    bytes_out = {rt_fourth, rt_third, rt_second, fourth};
+                    byteenable = 4'b1000; 
                 end
             endcase
 
@@ -113,16 +113,16 @@ module bytes_control(
 
             case(lsb_bits)
                 0 : begin
-                    bytes_out = {rt_fourth, rt_third, rt_second, fourth};
-                    byteenable = 4'b1000; 
+                    bytes_out = {first, rt_third, rt_second, rt_first};
+                    byteenable = 4'b0001; 
                 end
                 1: begin
-                    bytes_out = {rt_fourth, rt_third, fourth, third};
-                    byteenable = 4'b1100; 
+                    bytes_out = {second, first, rt_second, rt_first};
+                    byteenable = 4'b0011; 
                 end
                 2: begin    // In spec it says to ignore this, but included it for completeness
-                    bytes_out = {rt_fourth, fourth, third, second};
-                    byteenable = 4'b1110; 
+                    bytes_out = {third, second, first, rt_first};
+                    byteenable = 4'b0111; 
                 end
                 3: begin
                     bytes_out = readdata_eb;
