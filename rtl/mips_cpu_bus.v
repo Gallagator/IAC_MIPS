@@ -1,4 +1,4 @@
-`include "package.v"
+`include "rtl/mips_cpu/package.v"
 
 module mips_cpu_bus(
     /* Standard signals */
