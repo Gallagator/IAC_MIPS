@@ -3,11 +3,12 @@
 	.globl	main
 	.ent	main
 main:
-    addiu $3, 1
-    addiu $7, 34
-    addiu $10, 65530
-    addu $7, $10, $3
-    addu $4, $7, $3
-	.set	noreorder
- .end	main
+    .set noreorder
+    addiu $3, -1
+    addiu $7, -33
+    addiu $10, 6553
+    addu $7, $10, $3 
+    jr $0
+    addu $2, $7, $3
+.end main
  
