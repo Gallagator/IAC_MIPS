@@ -165,13 +165,11 @@ module mips_cpu_bus(
                 if(opcode == OPCODE_SW) begin
                     write = 0; 
                     read = 0;
-                    address_unaligned = alu_out;
                     reg_file_write = 0;
                 end
                 else if(opcode == OPCODE_SB || opcode == OPCODE_SH) begin
                     write = 0;
                     read = 0;
-                    address_unaligned = alu_out;
                     reg_file_write = 0;
                 end
                 else if(opcode == OPCODE_LW || opcode == OPCODE_LBU || opcode == OPCODE_LB || 
@@ -223,6 +221,7 @@ module mips_cpu_bus(
                    opcode == OPCODE_SB || 
                    opcode == OPCODE_SH) begin
                     write = 1;
+                    read = 0;
                     address_unaligned = alu_out;
                     reg_file_write = 0;
                     writedata_eb = loadstore_word;
@@ -230,6 +229,7 @@ module mips_cpu_bus(
                 end
                 else begin     // LBU, LB, LHU, LH, LWL, LWR
                     write = 0;
+                    read = 1;
                     reg_file_data_in = loadstore_word;
                     address_unaligned = alu_out;
                     reg_file_write = 1;
