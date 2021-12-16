@@ -9,8 +9,10 @@ module alu(
     logic msb_a, msb_b;
     assign msb_a = a[31];
     assign msb_b = b[31];
+
     always_comb begin
         
+        $display("ALU   a: %x, b: %x, r: %x", a, b, r);
         case(fncode) 
             FUNCT_ADDU : r = a + b;
             FUNCT_AND  : r = a & b;

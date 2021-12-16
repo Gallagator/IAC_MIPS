@@ -38,6 +38,10 @@ module alu_ctrl(
                 fncode = FUNCT_ADDU;
             OPCODE_LWR :
                 fncode = FUNCT_ADDU;
+            OPCODE_BEQ : 
+                fncode = FUNCT_ADDU;
+            OPCODE_REGIMM : 
+                fncode = FUNCT_SLTU;
             default:
                 fncode = 6'b11_1111; 
         endcase
