@@ -1,10 +1,11 @@
-	.text
+.text
 	.align	2
 	.globl	main
 	.ent	main
 main:
 	.set	noreorder
-    addiu $31, 91
+    addiu $3, 132
+    addiu  $4, 79
     jr $0
-    andi   $2, $31, 54
+    subu  $2, $4, $3
 .end	main
