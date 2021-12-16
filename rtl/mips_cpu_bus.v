@@ -120,7 +120,7 @@ module mips_cpu_bus(
             reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
 
-            if(reg_file_rt == 5'b10001) begin
+            if(reg_file_rt == 5'b10001 ||  reg_file_rt == 5'b10000) begin
                 reg_file_rd = 31;
             end
 
@@ -138,7 +138,7 @@ module mips_cpu_bus(
             end
             STATE_EXECUTE : begin
 
-                if(opcode == OPCODE_BEQ || opcode == OPCODE_BGTZ || opcode == OPCODE_BLEZ) begin
+                if(opcode == OPCODE_BEQ || opcode == OPCODE_BGTZ || opcode == OPCODE_BLEZ || opcode == OPCODE_BNE) begin
                     alu_a = itype_immediate;
                     alu_b = pc;
                     $display("CPU   alu_a: %x, alu_b: %x", alu_a, alu_b);
@@ -263,29 +263,35 @@ module mips_cpu_bus(
                         end 
                         ITYPE : begin
 
-                            if(opcode == OPCODE_BEQ && rs_val == rt_val && branch_delayed == BRANCH_NONE) begin  // Else we go to Fetch state only.
+                            if( (opcode == OPCODE_BEQ && rs_val == rt_val) && branch_delayed == BRANCH_NONE) begin  // Else we go to Fetch state only.
                                 pc_branch <= alu_out;
                                 branch_delayed <= BRANCH_DELAYED;
                                 state <= STATE_FETCH;
                                 $display("BEQ");
                             end
 
+                            else if(opcode == OPCODE_BNE && rs_val != rt_val && branch_delayed == BRANCH_NONE) begin
+                                pc_branch <= alu_out;
+                                branch_delayed <= BRANCH_DELAYED;
+                                state <= STATE_FETCH;
+                            end
+
                             else if(opcode == OPCODE_REGIMM) begin
-                                 && $signed(rs_val) >= 0 && branch_delayed == BRANCH_NONE
-                                if(reg_file_rt == 5'b00001 || reg_file_rt == 5'b10001 && $signed(rs_val) >= 0 && branch_delayed == BRANCH_NONE) begin   // BGEZ and BGEZAL
+
+                                if( (reg_file_rt == 5'b00001 || reg_file_rt == 5'b10001) && ($signed(rs_val) >= 0 && branch_delayed == BRANCH_NONE) ) begin   // BGEZ and BGEZAL
                                     pc_branch <= alu_out;
                                     branch_delayed <= BRANCH_DELAYED;
                                     
                                 end
                     
-                                else if(reg_file_rt == 5'b0 || reg_file_rt == 5'b10000 && $signed(rs_val) < 0 && branch_delayed == BRANCH_NONE) begin  // BLTZ
+                                else if( (reg_file_rt == 5'b0 || reg_file_rt == 5'b10000) && ($signed(rs_val) < 0 && branch_delayed == BRANCH_NONE) ) begin  // BLTZ
                                     pc_branch <= alu_out;
                                     branch_delayed <= BRANCH_DELAYED;
-                                    
+                                    $display("Entered: %x", rs_val);
                                 end 
                                 
                                 state <= STATE_FETCH;
-                                $display("BGEZAL");
+                                $display("BLTZ");
                                 $display("CPU   alu_out: %x", alu_out);
                                 $display("CPU   rs: %x", rs_val);
                             end
