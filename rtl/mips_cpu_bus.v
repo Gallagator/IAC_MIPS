@@ -209,14 +209,14 @@ module mips_cpu_bus(
                         write = 0;  
                         read = 0;
                         reg_file_write = 1;
-                        reg_file_data_in = alu_out; //this guy is destroying my brain cellz
+                        reg_file_data_in = alu_out;
                     end
                 end
                 else begin
                     write = 0;  
                     read = 0;
                     reg_file_write = 1;
-                    reg_file_data_in = alu_out; //this guy is destroying my brain cellz
+                    reg_file_data_in = alu_out;
                 end
 
             end
@@ -270,7 +270,6 @@ module mips_cpu_bus(
 
                 end
                 STATE_EXECUTE : begin
-                    $display("EXEC, ir= %b", effective_ir);
                     ir <= waitrequest_prev ? ir : readdata_eb;
                     if(branch_delayed == BRANCH_DELAYED) begin
                         pc <= pc_branch;
@@ -279,14 +278,12 @@ module mips_cpu_bus(
                     
                     case(instr_type) 
                         RTYPE : begin
-                            $display("reg_file_data_in = %d, reg_file_write = %d, reg_file_rd = %d", reg_file_data_in, reg_file_write, reg_file_rd);
                             case(rtype_fncode)
                                 FUNCT_JR : begin
                                     pc_branch <= rtype_rs;
                                     branch_delayed <= BRANCH_DELAYED;
                                 end
                                 FUNCT_MULT : begin
-                                    $display("lo = %d, hi = %d", alu_out, alu_out2);
                                     lo <= alu_out;
                                     hi <= alu_out2;
                                 end
@@ -364,16 +361,6 @@ module mips_cpu_bus(
             .fncode(alu_fncode), 
             .r(alu_out),
             .o(alu_out2));
-
-    /*lo_hi_reg lo_hi_reg(.clk(clk), 
-                        .reset(reset), 
-                        .addr_r(), 
-                        .write(), 
-                        .data_in(), 
-                        .r()) */
-
-
-
 
     toggle_endianness to_big(.a(readdata), .r(readdata_eb));
     toggle_endianness to_little(.a(writedata_eb), .r(writedata));
