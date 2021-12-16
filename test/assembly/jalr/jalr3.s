@@ -4,8 +4,10 @@
 	.ent	main
 main:
     .set	noreorder
-    addiu $3, $3, 36
-    addiu $4, $4, 56
+    lui $3, 0xBFC0
+    lui $4, 0xBFC0
+    addiu $3, $3, 40
+    addiu $4, $4, 60
     jalr $8, $3
     addiu $2, $2, 1
     jalr $31, $4
