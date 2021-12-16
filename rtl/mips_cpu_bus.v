@@ -120,7 +120,7 @@ module mips_cpu_bus(
             reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
 
-            if(reg_file_rt == 10001) begin
+            if(reg_file_rt == 5'b10001) begin
                 reg_file_rd = 31;
             end
 
@@ -146,10 +146,11 @@ module mips_cpu_bus(
                 else if(opcode == OPCODE_REGIMM) begin
                     alu_a = itype_immediate;
                     alu_b = pc;
-
-                    if(reg_file_rt == 10001) begin
+                    //$display("CPU   reg_file_rt: %b", reg_file_rt);
+                    if(reg_file_rt == 5'b10001) begin
                         reg_file_write = 1;
                         reg_file_data_in = pc+4;
+                        $display("CPU   reg_file_data_in: %x", reg_file_data_in);
                     end
 
                 end
@@ -247,15 +248,11 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     ir <= waitrequest_prev ? ir : readdata_eb;
-                    if(branch_delayed == BRANCH_DELAYED) begin
-                        pc <= pc_branch;
-                        branch_delayed <= BRANCH_NONE;
-                    end
 
                     case(instr_type) 
                         RTYPE : begin
-                            if(rtype_fncode == FUNCT_JR) begin
-                                pc_branch <= rtype_rs;
+                            if(rtype_fncode == FUNCT_JR && branch_delayed == BRANCH_NONE) begin
+                                pc_branch <= rs_val;
                                 $display("CPU   pc_branch: %x", rtype_rs);
                                 branch_delayed <= BRANCH_DELAYED;
                             end
@@ -308,6 +305,11 @@ module mips_cpu_bus(
                         end 
                         default : ;
                     endcase
+
+                    if(branch_delayed == BRANCH_DELAYED) begin
+                        pc <= pc_branch;
+                        branch_delayed <= BRANCH_NONE;
+                    end
                     
                 end
                 STATE_MEMORY : begin
