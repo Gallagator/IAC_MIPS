@@ -14,6 +14,9 @@ module mips_cpu_bus(
     output logic[3:0] byteenable,
     input logic[31:0] readdata
 );
+    logic[31:0] address_unaligned;
+    assign address = {address_unaligned[31:2], 2'b00};
+
     /* readdata/writedata big endian */
     logic[31:0] readdata_eb;
     logic[31:0] writedata_eb;
@@ -126,7 +129,7 @@ module mips_cpu_bus(
                 reg_file_write = 0;
                 read = 1;
                 write = 0;
-                address = pc;
+                address_unaligned = pc;
                 byteenable = 4'b1111;
             end
             STATE_EXECUTE : begin
@@ -135,14 +138,14 @@ module mips_cpu_bus(
                     write = 0;
                     read = 1;
                     byteenable = 4'b1111;
-                    address = alu_out;
+                    address_unaligned = alu_out;
                     reg_file_write = 0;
                 end
                 else if(opcode == OPCODE_SW) begin
                     write = 0; 
                     read = 0;
                     byteenable = 4'b1111;
-                    address = alu_out;
+                    address_unaligned = alu_out;
                     writedata_eb = rt_val;
                     reg_file_write = 0;
                 end
@@ -151,7 +154,7 @@ module mips_cpu_bus(
                         opcode == OPCODE_LWL || opcode == OPCODE_LWR) begin     // Don't know if I can shorten this by putting it as default.
                     write = 0;
                     read = 1;
-                    address = alu_out;
+                    address_unaligned = alu_out;
                     reg_file_write = 0;
                     byteenable = bytes_byteenable;
                 end
@@ -292,7 +295,7 @@ module mips_cpu_bus(
     bytes_control bytes_control(
         .readdata_eb(readdata_eb),
         .opcode(opcode),
-        .lsb_bits(address[1:0]),
+        .lsb_bits(address_unaligned[1:0]),
         .bytes_out(loadstore_word),
         .rt_val_itype(rt_val),
         .byteenable(bytes_byteenable)
