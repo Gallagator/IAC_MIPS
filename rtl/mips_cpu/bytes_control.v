@@ -1,5 +1,3 @@
-`include "package.v"
-
 module bytes_control(
     input logic[31:0] readdata_eb,
     input logic[5:0] opcode,
@@ -117,3 +115,4 @@ module bytes_control(
     end
 
 endmodule
+

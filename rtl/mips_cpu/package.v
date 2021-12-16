@@ -1,5 +1,5 @@
-`ifndef PACKAGE_P
-`define PACKAGE_P
+`ifndef PACKAGE_V
+`define PACKAGE_V
 
 
 typedef enum logic[5:0] {
@@ -59,3 +59,4 @@ typedef enum logic {
 } branch_delay_state_t;
  
 `endif
+
