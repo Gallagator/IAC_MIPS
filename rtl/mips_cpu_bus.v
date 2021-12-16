@@ -23,6 +23,9 @@ module mips_cpu_bus(
 
     /* Program Counter, instruction register, state */
     logic[31: 0] pc, pc_branch;
+    logic[31:0] jjal_addr;
+    assign jjal_addr = {pc[31:28], jtype_address, 2'b00};
+    
     branch_delay_state_t branch_delayed;
 
     logic[31: 0] ir, effective_ir;
@@ -147,6 +150,11 @@ module mips_cpu_bus(
             reg_file_rs = itype_rs;
             reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
+
+            if(reg_file_rt == 5'b10001 ||  reg_file_rt == 5'b10000) begin
+                reg_file_rd = 31;
+            end
+
             alu_a = rs_val;
             alu_b = itype_immediate;
         end
@@ -172,6 +180,21 @@ module mips_cpu_bus(
                     read = 0;
                     reg_file_write = 0;
                 end
+                else if(opcode == OPCODE_BEQ || opcode == OPCODE_BGTZ || opcode == OPCODE_BLEZ || opcode == OPCODE_BNE) begin
+                    alu_a = itype_immediate;
+                    alu_b = pc;
+                end
+
+                else if(opcode == OPCODE_REGIMM) begin
+                    alu_a = itype_immediate;
+                    alu_b = pc;
+                    if(reg_file_rt == 5'b10001 || reg_file_rt == 5'b10000) begin   // BGEZAL and BLTZAL
+                        reg_file_write = 1;
+                        reg_file_data_in = pc+4;
+                    end
+
+                end
+
                 else if(opcode == OPCODE_LW || opcode == OPCODE_LBU || opcode == OPCODE_LB || 
                         opcode == OPCODE_LHU || opcode == OPCODE_LH || 
                         opcode == OPCODE_LWL || opcode == OPCODE_LWR) begin     // Don't know if I can shorten this by putting it as default.
@@ -206,6 +229,13 @@ module mips_cpu_bus(
                         reg_file_write = 1;
                         reg_file_data_in = alu_out;
                     end
+                end
+                else if(opcode == OPCODE_JAL) begin
+                    reg_file_data_in = pc + 4;
+                    reg_file_write = 1;
+                    reg_file_rd = 31; // Return address register
+                    write = 0;
+                    read = 0;
                 end
                 else begin
                     write = 0;  
@@ -266,43 +296,69 @@ module mips_cpu_bus(
                 end
                 STATE_EXECUTE : begin
                     ir <= waitrequest_prev ? ir : readdata_eb;
-                    if(branch_delayed == BRANCH_DELAYED) begin
-                        pc <= pc_branch;
-                        branch_delayed <= BRANCH_NONE;
-                    end
-                    
+                   
                     case(instr_type) 
                         RTYPE : begin
-                            case(rtype_fncode)
-                                FUNCT_JR : begin
-                                    pc_branch <= rtype_rs;
-                                    branch_delayed <= BRANCH_DELAYED;
-                                end
-                                FUNCT_MULT : begin
-                                    lo <= alu_out;
-                                    hi <= alu_out2;
-                                end
-                                FUNCT_DIV : begin
-                                    lo <= alu_out;
-                                    hi <= alu_out2;
-                                end
-                                FUNCT_MULTU : begin
-                                    lo <= alu_out;
-                                    hi <= alu_out2;
-                                end
-                                FUNCT_DIVU : begin
-                                    lo <= alu_out;
-                                    hi <= alu_out2;
-                                end
-                            endcase
+                            if( rtype_fncode == FUNCT_MULT  ||
+                                rtype_fncode == FUNCT_DIV   ||
+                                rtype_fncode == FUNCT_MULTU ||
+                                rtype_fncode == FUNCT_DIVU
+                            ) begin
+                                lo <= alu_out;
+                                hi <= alu_out2;
+                            end
+                            else if(rtype_fncode == FUNCT_JR && branch_delayed == BRANCH_NONE) begin
+                                pc_branch <= rs_val;
+                                branch_delayed <= BRANCH_DELAYED;
+                            end
                             state <= STATE_FETCH;
                         end 
                         ITYPE : begin
+
+                            if( (opcode == OPCODE_BEQ && rs_val == rt_val) && branch_delayed == BRANCH_NONE) begin  // Else we go to Fetch state only.
+                                pc_branch <= alu_out;
+                                branch_delayed <= BRANCH_DELAYED;
+                                state <= STATE_FETCH;
+                            end
+
+                            else if(opcode == OPCODE_BNE && rs_val != rt_val && branch_delayed == BRANCH_NONE) begin
+                                pc_branch <= alu_out;
+                                branch_delayed <= BRANCH_DELAYED;
+                                state <= STATE_FETCH;
+                            end
+
+                            else if(opcode == OPCODE_REGIMM) begin
+                                if( (reg_file_rt == 5'b00001 || reg_file_rt == 5'b10001) && ($signed(rs_val) >= 0 && branch_delayed == BRANCH_NONE) ) begin   // BGEZ and BGEZAL
+                                    pc_branch <= alu_out;
+                                    branch_delayed <= BRANCH_DELAYED;
+                                    
+                                end
+                    
+                                else if( (reg_file_rt == 5'b0 || reg_file_rt == 5'b10000) && ($signed(rs_val) < 0 && branch_delayed == BRANCH_NONE) ) begin  // BLTZ
+                                    pc_branch <= alu_out;
+                                    branch_delayed <= BRANCH_DELAYED;
+                                end 
+                                
+                                state <= STATE_FETCH;
+                            end
+                            else if(opcode == OPCODE_BGTZ && $signed(rs_val) > 0 && branch_delayed == BRANCH_NONE) begin
+                                pc_branch <= alu_out;
+                                branch_delayed <= BRANCH_DELAYED;
+                                state <= STATE_FETCH;
+
+                            end
+
+                            else if(opcode == OPCODE_BLEZ && $signed(rs_val) <= 0 && branch_delayed == BRANCH_NONE) begin
+                                pc_branch <= alu_out;
+                                branch_delayed <= BRANCH_DELAYED;
+                                state <= STATE_FETCH;
+                            end
+
                             /* Will also have to include other load instrs */
-                            if( opcode == OPCODE_LW || opcode == OPCODE_LBU || 
+                            else if( opcode == OPCODE_LW || opcode == OPCODE_LBU || 
                                 opcode == OPCODE_LB || opcode == OPCODE_LH || 
                                 opcode == OPCODE_LHU || opcode == OPCODE_LWL || 
-                                opcode == OPCODE_LWR ) begin    // Don't know I could make this shorter by putting it into the else statement.
+                                opcode == OPCODE_LWR ) begin
                                 
                                 if(!waitrequest) begin
                                     state <= STATE_MEMORY;
@@ -319,10 +375,18 @@ module mips_cpu_bus(
 
                         end 
                         JTYPE : begin
-
+                            if(branch_delayed == BRANCH_NONE) begin
+                                pc_branch <= jjal_addr;
+                                branch_delayed <= BRANCH_DELAYED;
+                            end
                         end 
                         default : ;
                     endcase
+
+                    if(branch_delayed == BRANCH_DELAYED) begin
+                        pc <= pc_branch;
+                        branch_delayed <= BRANCH_NONE;
+                    end
                     
                 end
                 STATE_MEMORY : begin
