@@ -11,5 +11,5 @@ main:
     sw    $4, 4($0)
     lw    $3, 4($0)
     jr $0
-    lwr   $2, 0($0)
+    lwr   $2, 3($0)
 .end	main

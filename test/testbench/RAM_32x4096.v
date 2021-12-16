@@ -43,7 +43,9 @@ module RAM_32x4096(
         if (write) begin
             memory[address] <= masked_writedata;
         end
-        readdata <= memory[address]; // Read-after-write mode
+        if(read) begin
+            readdata <= memory[address]; // Read-after-write mode
+        end
         /* Why do we not use if(read). If we were to use this most of the memory instructions don't work.*/
     end
 

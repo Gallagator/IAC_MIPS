@@ -8,8 +8,7 @@ main:
     addiu $4, $4, 0x1234 
     sw    $4, 0($0)
     sw    $4, 4($0)
-    lwl   $2, 2($0)
     jr $0
-    lwr   $2, 5($0)
+    lw   $2, 4($0)
 .end	main
 

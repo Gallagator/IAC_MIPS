@@ -88,27 +88,36 @@ module mips_cpu_bus_generic_tb();
 
         // Is the address in the stack region.        
         if(prev_address < (4096 << 2)) begin
+            readdata = stack_read_data;
+        end
+        // Is the address in the program region.
+        else if(prev_address >= 32'hBFC0_0000 && 
+           prev_address < (32'hBFC0_0000 + (4096 << 2)) ) begin
+            readdata = prog_read_data;
+        end 
+        else begin
+            readdata = 0;
+        end
+
+  
+        if(address < (4096 << 2)) begin
             stack_read = read;
             stack_write = write;
-            readdata = stack_read_data;
         end
         else begin
             stack_read = 0;
             stack_write = 0;
         end
 
-        // Is the address in the program region.
-        if(prev_address >= 32'hBFC0_0000 && 
-           prev_address < (32'hBFC0_0000 + (4096 << 2)) ) begin
+        if(address >= 32'hBFC0_0000 && 
+           address < (32'hBFC0_0000 + (4096 << 2)) ) begin
             prog_read = read;
             prog_write = write;
-            readdata = prog_read_data;
-        end 
+        end
         else begin
             prog_read = 0;
             prog_write = 0;
         end
-
     end
 
     always_ff @(posedge clk) begin
