@@ -114,20 +114,16 @@ module mips_cpu_bus(
         else if(opcode == OPCODE_J || opcode == OPCODE_JAL) begin
             instr_type = JTYPE;
         end
-        else if(opcode == OPCODE_REGIMM) begin
-            reg_file_rs = itype_rs;
-            reg_file_write = 0;
-            case(itype_rt)
-                BGEZ : begin
-                    
-                end
-            endcase
-        end
         else begin
             instr_type = ITYPE;
             reg_file_rs = itype_rs;
             reg_file_rt = itype_rt;  // Mysteriously needed.
             reg_file_rd = itype_rt;
+
+            if(reg_file_rt == 10001) begin
+                reg_file_rd = 31;
+            end
+
             alu_a = rs_val;
             alu_b = itype_immediate;
         end
@@ -146,11 +142,17 @@ module mips_cpu_bus(
                     alu_a = itype_immediate;
                     alu_b = pc;
                 end
+
                 else if(opcode == OPCODE_REGIMM) begin
+                    alu_a = itype_immediate;
+                    alu_b = pc;
+
+                    if(reg_file_rt == 10001) begin
+                        reg_file_write = 1;
+                        reg_file_data_in = pc+4;
+                    end
 
                 end
-                    
-                endinterface
 
                 else if(opcode == OPCODE_LW) begin
                     write = 0;
@@ -217,6 +219,10 @@ module mips_cpu_bus(
         endcase
     end
 
+    always @(pc) begin
+        $display("CPU   pc: %x", pc);
+    end
+
     always @(posedge clk) begin
         waitrequest_prev <= waitrequest;
        
@@ -250,6 +256,7 @@ module mips_cpu_bus(
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR) begin
                                 pc_branch <= rtype_rs;
+                                $display("CPU   pc_branch: %x", rtype_rs);
                                 branch_delayed <= BRANCH_DELAYED;
                             end
                             state <= STATE_FETCH;
@@ -260,10 +267,23 @@ module mips_cpu_bus(
                                 pc_branch <= alu_out;
                                 branch_delayed <= BRANCH_DELAYED;
                                 state <= STATE_FETCH;
+                                $display("BEQ");
+                            end
+
+                            else if(opcode == OPCODE_REGIMM && $signed(rs_val) >= 0) begin
+                                pc_branch <= alu_out;
+                                branch_delayed <= BRANCH_DELAYED;
+
+                                
+
+                                state <= STATE_FETCH;
+                                $display("BGEZAL");
+                                $display("CPU   alu_out: %x", alu_out);
+                                $display("CPU   rs: %x", rs_val);
                             end
 
                             /* Will also have to include other load instrs */
-                            if( opcode == OPCODE_LW || opcode == OPCODE_LBU || 
+                            else if( opcode == OPCODE_LW || opcode == OPCODE_LBU || 
                                 opcode == OPCODE_LB || opcode == OPCODE_LH || 
                                 opcode == OPCODE_LHU || opcode == OPCODE_LWL || 
                                 opcode == OPCODE_LWR ) begin    // Don't know I could make this shorter by putting it into the else statement.
@@ -278,6 +298,7 @@ module mips_cpu_bus(
                                 end
                             end 
                             else begin
+                                $display("ADDIU");
                                 state <= STATE_FETCH;
                             end
 

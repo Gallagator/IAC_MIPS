@@ -48,10 +48,6 @@ typedef enum logic[5:0] {
     OPCODE_BEQ      = 6'b00_0100,
     OPCODE_REGIMM   = 6'b00_0001
 } opcode_t;
-
-typedef enum logic[1:0] {
-    BGEZ    = 5'b00_001
-} branch_type_t;
     
 typedef enum logic[1:0] {
     RTYPE,

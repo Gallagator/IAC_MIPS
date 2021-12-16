@@ -16,7 +16,7 @@ module sign_extension(
         else if(opcode == OPCODE_LUI) begin
             signed_itype_immediate = {itype_immediate, 16'b0};
         end
-        else if(opcode == OPCODE_BEQ) begin
+        else if(opcode == OPCODE_BEQ || opcode == OPCODE_REGIMM) begin
             signed_itype_immediate = msb ? {14'h3FFF, itype_immediate, 2'b0} : {14'b0, itype_immediate, 2'b0};
         end
         else begin
