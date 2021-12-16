@@ -1,5 +1,3 @@
-`include "package.v"
-
 module mips_cpu_bus(
     /* Standard signals */
     input logic clk,
@@ -309,3 +307,4 @@ module toggle_endianness(
     assign r = {a[7:0], a[15:8], a[23:16], a[31:24]};
  
 endmodule
+
