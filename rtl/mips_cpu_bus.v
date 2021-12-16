@@ -138,9 +138,10 @@ module mips_cpu_bus(
             end
             STATE_EXECUTE : begin
 
-                if(opcode == OPCODE_BEQ) begin
+                if(opcode == OPCODE_BEQ || opcode == OPCODE_BGTZ) begin
                     alu_a = itype_immediate;
                     alu_b = pc;
+                    $display("CPU   alu_a: %x, alu_b: %x", alu_a, alu_b);
                 end
 
                 else if(opcode == OPCODE_REGIMM) begin
@@ -154,6 +155,7 @@ module mips_cpu_bus(
                     end
 
                 end
+
 
                 else if(opcode == OPCODE_LW) begin
                     write = 0;
@@ -253,21 +255,22 @@ module mips_cpu_bus(
                         RTYPE : begin
                             if(rtype_fncode == FUNCT_JR && branch_delayed == BRANCH_NONE) begin
                                 pc_branch <= rs_val;
-                                $display("CPU   pc_branch: %x", rtype_rs);
+                                $display("JR");
+                                $display("CPU   pc_branch: %x", pc_branch);
                                 branch_delayed <= BRANCH_DELAYED;
                             end
                             state <= STATE_FETCH;
                         end 
                         ITYPE : begin
 
-                            if(opcode == OPCODE_BEQ && rs_val == rt_val) begin  // Else we go to Fetch state only.
+                            if(opcode == OPCODE_BEQ && rs_val == rt_val && branch_delayed == BRANCH_NONE) begin  // Else we go to Fetch state only.
                                 pc_branch <= alu_out;
                                 branch_delayed <= BRANCH_DELAYED;
                                 state <= STATE_FETCH;
                                 $display("BEQ");
                             end
 
-                            else if(opcode == OPCODE_REGIMM && $signed(rs_val) >= 0) begin
+                            else if(opcode == OPCODE_REGIMM && $signed(rs_val) >= 0 && branch_delayed == BRANCH_NONE) begin
                                 pc_branch <= alu_out;
                                 branch_delayed <= BRANCH_DELAYED;
 
@@ -277,6 +280,15 @@ module mips_cpu_bus(
                                 $display("BGEZAL");
                                 $display("CPU   alu_out: %x", alu_out);
                                 $display("CPU   rs: %x", rs_val);
+                            end
+                            else if(opcode == OPCODE_BGTZ && $signed(rs_val) > 0 && branch_delayed == BRANCH_NONE) begin
+                                pc_branch <= alu_out;
+                                branch_delayed <= BRANCH_DELAYED;
+                                $display("BGTZ");
+                                $display("CPU   alu_out: %x", alu_out);
+                                $display("CPU   rs: %x", rs_val);
+                                state <= STATE_FETCH;
+
                             end
 
                             /* Will also have to include other load instrs */
@@ -308,6 +320,7 @@ module mips_cpu_bus(
 
                     if(branch_delayed == BRANCH_DELAYED) begin
                         pc <= pc_branch;
+                        $display("BRANCH   pc: %x", pc);
                         branch_delayed <= BRANCH_NONE;
                     end
                     

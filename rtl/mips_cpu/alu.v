@@ -12,7 +12,7 @@ module alu(
 
     always_comb begin
         
-        $display("ALU   a: %x, b: %x, r: %x", a, b, r);
+        
         case(fncode) 
             FUNCT_ADDU : r = a + b;
             FUNCT_AND  : r = a & b;
@@ -29,7 +29,7 @@ module alu(
             FUNCT_SLT  : r = $signed(a) < $signed(b) ? 1 : 0;
             default : r = 0;
         endcase
-        
+        $display("ALU   a: %x, b: %x, r: %x", a, b, r);
     end
 
 
