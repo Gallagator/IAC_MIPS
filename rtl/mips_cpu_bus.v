@@ -223,6 +223,12 @@ module mips_cpu_bus(
                         reg_file_write = 1;
                         reg_file_data_in = lo;
                     end
+                    else if(rtype_fncode == FUNCT_JALR) begin
+                        write = 0;  
+                        read = 0;
+                        reg_file_write = 1;
+                        reg_file_data_in = pc + 4;
+                    end
                     else begin
                         write = 0;  
                         read = 0;
@@ -307,7 +313,7 @@ module mips_cpu_bus(
                                 lo <= alu_out;
                                 hi <= alu_out2;
                             end
-                            else if(rtype_fncode == FUNCT_JR && branch_delayed == BRANCH_NONE) begin
+                            else if((rtype_fncode == FUNCT_JR || rtype_fncode == FUNCT_JALR) && branch_delayed == BRANCH_NONE) begin
                                 pc_branch <= rs_val;
                                 branch_delayed <= BRANCH_DELAYED;
                             end

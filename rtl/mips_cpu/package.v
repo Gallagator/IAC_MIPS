@@ -5,6 +5,7 @@
 typedef enum logic[5:0] {
     FUNCT_ADDU  = 6'b10_0001,
     FUNCT_JR    = 6'b00_1000,
+    FUNCT_JALR  = 6'b00_1001,
     FUNCT_AND   = 6'b10_0100,
     FUNCT_OR    = 6'b10_0101,
     FUNCT_XOR   = 6'b10_0110,
