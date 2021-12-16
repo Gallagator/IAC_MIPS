@@ -33,9 +33,13 @@ module bytes_control(
 
     always_comb begin
 
-        if(opcode == OPCODE_LW || opcode == OPCODE_SW) begin
+        if(opcode == OPCODE_LW) begin
             byteenable = 4'b1111;
             bytes_out = readdata_eb;
+        end
+        else if(opcode == OPCODE_SW) begin
+            byteenable = 4'b1111;
+            bytes_out = rt_val_itype;
         end
         else if(opcode == OPCODE_SB) begin
 
