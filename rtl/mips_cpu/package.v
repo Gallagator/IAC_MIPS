@@ -16,7 +16,13 @@ typedef enum logic[5:0] {
     FUNCT_SRA   = 6'b00_0011,
     FUNCT_SRAV  = 6'b00_0111,
     FUNCT_SLT   = 6'b10_1010,
-    FUNCT_SLTU  = 6'b10_1011
+    FUNCT_SLTU  = 6'b10_1011,
+    FUNCT_MULT  = 6'b01_1000,
+    FUNCT_MULTU = 6'b01_1001,
+    FUNCT_DIV   = 6'b01_1010,
+    FUNCT_DIVU  = 6'b01_1011,
+    FUNCT_MFH    = 6'b01_0000,
+    FUNCT_MFL    = 6'b01_0010
 } funct_t;
 
 typedef enum logic[1:0] {    /*3 bits for this?*/

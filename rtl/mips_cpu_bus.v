@@ -28,6 +28,9 @@ module mips_cpu_bus(
     logic[31: 0] ir, effective_ir;
     state_t state;
 
+    //hi lo regs for div and mult
+    logic[31:0] hi, lo;
+
     /* Register file outputs */  
     logic[31:0] rs_val, rt_val;
 
@@ -39,7 +42,7 @@ module mips_cpu_bus(
     logic[4:0] reg_file_rd;
 
     /* ALU */
-    logic[31:0] alu_out;
+    logic[31:0] alu_out, alu_out2;
     logic[5:0] alu_fncode;
     logic[31:0] alu_a;
     logic[31:0] alu_b;
@@ -73,12 +76,12 @@ module mips_cpu_bus(
     assign opcode = effective_ir[31:26];
 
     /* rtype */
-    assign rtype_rs     = effective_ir[25:21];
-    assign rtype_rt     = effective_ir[20:16];
-    assign rtype_rd     = effective_ir[15:11];
-    assign rtype_shamnt = effective_ir[10:6];
+    assign rtype_rs        = effective_ir[25:21];
+    assign rtype_rt        = effective_ir[20:16];
+    assign rtype_rd        = effective_ir[15:11];
+    assign rtype_shamnt    = effective_ir[10:6];
     assign extended_shamnt = {27'b0, rtype_shamnt};
-    assign rtype_fncode = effective_ir[5:0];
+    assign rtype_fncode    = effective_ir[5:0];
 
     /* itype */
     assign itype_rs     = effective_ir[25:21];
@@ -107,10 +110,34 @@ module mips_cpu_bus(
             reg_file_rs = rtype_rs;
             reg_file_rt = rtype_rt;
             reg_file_rd = rtype_rd;
-            reg_file_write = state == STATE_EXECUTE;
-            reg_file_data_in = alu_out;
             alu_a = immediate_shift ? extended_shamnt : rs_val;
             alu_b = rt_val;
+            case(rtype_fncode)
+                FUNCT_MFH : begin
+                    reg_file_data_in = hi;
+                    reg_file_write = state == STATE_EXECUTE;
+                end
+                FUNCT_MFL : begin
+                    reg_file_data_in = lo;
+                    reg_file_write = state == STATE_EXECUTE;
+                end
+                FUNCT_MULT : begin
+                    reg_file_write = 0;
+                end
+                FUNCT_MULTU : begin
+                    reg_file_write = 0;
+                end
+                FUNCT_DIV : begin
+                    reg_file_write = 0;
+                end
+                FUNCT_DIVU : begin
+                    reg_file_write = 0;
+                end
+                default   : begin
+                    reg_file_data_in = alu_out; 
+                    reg_file_write = state == STATE_EXECUTE;
+                end
+            endcase
         end
         else if(opcode == OPCODE_J || opcode == OPCODE_JAL) begin
             instr_type = JTYPE;
@@ -126,6 +153,7 @@ module mips_cpu_bus(
 
         case(state) 
             STATE_FETCH: begin
+                
                 reg_file_write = 0;
                 read = 1;
                 write = 0;
@@ -163,6 +191,26 @@ module mips_cpu_bus(
                     read = 0;
                     reg_file_data_in = itype_immediate;
                     reg_file_write = 1;
+                end
+                else if(opcode == OPCODE_RTYPE) begin
+                    if(rtype_fncode == FUNCT_MFH) begin
+                        write = 0;  
+                        read = 0;
+                        reg_file_write = 1;
+                        reg_file_data_in = hi;
+                    end
+                    else if (rtype_fncode == FUNCT_MFL) begin
+                        write = 0;  
+                        read = 0;
+                        reg_file_write = 1;
+                        reg_file_data_in = lo;
+                    end
+                    else begin
+                        write = 0;  
+                        read = 0;
+                        reg_file_write = 1;
+                        reg_file_data_in = alu_out;
+                    end
                 end
                 else begin
                     write = 0;  
@@ -205,6 +253,8 @@ module mips_cpu_bus(
             state <= STATE_FETCH;
             pc_branch <= 0;
             branch_delayed <= BRANCH_NONE;
+            lo <= 0;
+            hi <= 0;
         end
         else if(active) begin
             case(state)  
@@ -225,13 +275,31 @@ module mips_cpu_bus(
                         pc <= pc_branch;
                         branch_delayed <= BRANCH_NONE;
                     end
-
+                    
                     case(instr_type) 
                         RTYPE : begin
-                            if(rtype_fncode == FUNCT_JR) begin
-                                pc_branch <= rtype_rs;
-                                branch_delayed <= BRANCH_DELAYED;
-                            end
+                            case(rtype_fncode)
+                                FUNCT_JR : begin
+                                    pc_branch <= rtype_rs;
+                                    branch_delayed <= BRANCH_DELAYED;
+                                end
+                                FUNCT_MULT : begin
+                                    lo <= alu_out;
+                                    hi <= alu_out2;
+                                end
+                                FUNCT_DIV : begin
+                                    lo <= alu_out;
+                                    hi <= alu_out2;
+                                end
+                                FUNCT_MULTU : begin
+                                    lo <= alu_out;
+                                    hi <= alu_out2;
+                                end
+                                FUNCT_DIVU : begin
+                                    lo <= alu_out;
+                                    hi <= alu_out2;
+                                end
+                            endcase
                             state <= STATE_FETCH;
                         end 
                         ITYPE : begin
@@ -288,7 +356,11 @@ module mips_cpu_bus(
                       .register_v0(register_v0)
     );
 
-    alu alu(.a(alu_a), .b(alu_b), .fncode(alu_fncode), .r(alu_out));
+    alu alu(.a(alu_a),
+            .b(alu_b),
+            .fncode(alu_fncode), 
+            .r(alu_out),
+            .o(alu_out2));
 
     toggle_endianness to_big(.a(readdata), .r(readdata_eb));
     toggle_endianness to_little(.a(writedata_eb), .r(writedata));
