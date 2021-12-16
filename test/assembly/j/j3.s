@@ -7,6 +7,7 @@ main:
     addiu $3, $3, 3
     addiu $5, $5, 5
     j next
+    nop
     div $5, $3
     jr $0
     addiu $2, $2, 30
@@ -17,3 +18,4 @@ next:
 
 
 .end	main
+

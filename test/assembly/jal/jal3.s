@@ -7,7 +7,7 @@ main:
     jal next
     addiu $2, $2, 1
     jal next2
-    aadiu $2, $2, 2
+    addiu $2, $2, 2
     jr $0
     addiu $2, $2, 4
 
@@ -24,7 +24,7 @@ next2:
     addiu $2, $2, 64
     jr $31
     addiu $2, $2, 128
-    jr 0$
+    jr $0
     addiu $2, $2, 256
 
 .end	main

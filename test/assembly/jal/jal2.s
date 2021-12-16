@@ -21,7 +21,8 @@ next2:
     addiu $2, $2, 64
     jr $31
     addiu $2, $2, 128
-    jr 0$
+    jr $0
     addiu $2, $2, 256
 
 .end	main
+
