@@ -4,7 +4,7 @@
 	.ent	main
 main:
 	.set	noreorder
-    addiu $31, 91
+    addiu $3, 8967
     jr $0
-    andi   $2, $31, 54
+    ori   $2, $3, 0
 .end	main
