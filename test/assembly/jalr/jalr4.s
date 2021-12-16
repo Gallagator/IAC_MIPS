@@ -18,7 +18,6 @@ main:
     jalr    $14, $4
     addiu   $2, $2, 8
 
-<<<<<<< HEAD
     jr      $31
     addiu   $2, $2, 16
     jr      $0
@@ -30,6 +29,4 @@ main:
     jr      $0
     addiu   $2, $2, 256
 
-=======
->>>>>>> c9e22fa665458102be5487308efffc9d7fbbda3a
 .end	main
