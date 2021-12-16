@@ -114,6 +114,15 @@ module mips_cpu_bus(
         else if(opcode == OPCODE_J || opcode == OPCODE_JAL) begin
             instr_type = JTYPE;
         end
+        else if(opcode == OPCODE_REGIMM) begin
+            reg_file_rs = itype_rs;
+            reg_file_write = 0;
+            case(itype_rt)
+                BGEZ : begin
+                    
+                end
+            endcase
+        end
         else begin
             instr_type = ITYPE;
             reg_file_rs = itype_rs;
@@ -133,13 +142,24 @@ module mips_cpu_bus(
             end
             STATE_EXECUTE : begin
 
-                if(opcode == OPCODE_LW) begin
+                if(opcode == OPCODE_BEQ) begin
+                    alu_a = itype_immediate;
+                    alu_b = pc;
+                end
+                else if(opcode == OPCODE_REGIMM) begin
+
+                end
+                    
+                endinterface
+
+                else if(opcode == OPCODE_LW) begin
                     write = 0;
                     read = 1;
                     byteenable = 4'b1111;
                     address = alu_out;
                     reg_file_write = 0;
                 end
+                
                 else if(opcode == OPCODE_SW) begin
                     write = 0; 
                     read = 0;
@@ -189,6 +209,14 @@ module mips_cpu_bus(
 
     end
 
+    always @(state) begin
+        case(state)
+            STATE_FETCH : $display("-----------------------------------------\nSTATE FETCH");
+            STATE_EXECUTE : $display("STATE EXECUTE");
+            STATE_MEMORY : $display("STATE MEMORY");
+        endcase
+    end
+
     always @(posedge clk) begin
         waitrequest_prev <= waitrequest;
        
@@ -227,6 +255,13 @@ module mips_cpu_bus(
                             state <= STATE_FETCH;
                         end 
                         ITYPE : begin
+
+                            if(opcode == OPCODE_BEQ && rs_val == rt_val) begin  // Else we go to Fetch state only.
+                                pc_branch <= alu_out;
+                                branch_delayed <= BRANCH_DELAYED;
+                                state <= STATE_FETCH;
+                            end
+
                             /* Will also have to include other load instrs */
                             if( opcode == OPCODE_LW || opcode == OPCODE_LBU || 
                                 opcode == OPCODE_LB || opcode == OPCODE_LH || 
