@@ -33,7 +33,47 @@ module bytes_control(
 
     always_comb begin
 
-        if(opcode == OPCODE_LHU || opcode == OPCODE_LH) begin
+        if(opcode == OPCODE_LW || opcode == OPCODE_SW) begin
+            byteenable = 4'b1111;
+        end
+        else if(opcode == OPCODE_SB) begin
+
+            case(lsb_bits)
+                0 : begin
+                    byteenable = 4'b0001;
+                    bytes_out = {24'b0, rt_first};
+                end
+                1 : begin
+                    byteenable = 4'b0010;
+                    bytes_out = {16'b0, rt_first, 8'b0};
+                end
+                2 : begin
+                    byteenable = 4'b0100;
+                    bytes_out = {8'b0, rt_first, 16'b0};
+                end
+                3 : begin
+                    byteenable = 4'b1000;
+                    bytes_out = {rt_first, 24'b0};
+                end
+            endcase
+
+        end
+
+        else if(opcode == OPCODE_SH) begin
+            
+            case(lsb_bits)
+                0 : begin
+                    byteenable = 4'b0011;
+                    bytes_out = {16'b0, rt_second, rt_first};
+                end
+                2 : begin
+                    byteenable = 4'b1100;
+                    bytes_out = {rt_second, rt_first, 16'b0};
+                end
+            endcase
+        end
+
+        else if(opcode == OPCODE_LHU || opcode == OPCODE_LH) begin
             
             case(lsb_bits)
                 0: begin
@@ -91,7 +131,7 @@ module bytes_control(
             endcase
 
         end
-        else begin 
+        else begin  // LB, LBU
             case(lsb_bits)
                 0 : begin
                     bytes_out = (opcode == OPCODE_LBU) ? {24'b0, first} : ( (first >> 7) ? {24'hFFFFFF, first} :  {24'b0, first});   // first >> 7 is the MSB.

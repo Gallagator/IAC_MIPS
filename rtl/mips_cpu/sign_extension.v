@@ -14,7 +14,7 @@ module sign_extension(
         else if(opcode == OPCODE_LUI) begin
             signed_itype_immediate = {itype_immediate, 16'b0};
         end
-        else begin
+        else begin  // Address calculations and other Itype instructions.
             signed_itype_immediate = msb ? {16'hFFFF, itype_immediate} : {16'b0, itype_immediate};
         end
         

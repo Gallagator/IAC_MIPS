@@ -44,7 +44,9 @@ typedef enum logic[5:0] {
     OPCODE_LH       = 6'b10_0001,
     OPCODE_LUI      = 6'b00_1111,
     OPCODE_LWL      = 6'b10_0010,
-    OPCODE_LWR      = 6'b10_0110
+    OPCODE_LWR      = 6'b10_0110,
+    OPCODE_SB       = 6'b10_1000,
+    OPCODE_SH       = 6'b10_1001
 } opcode_t;
     
 typedef enum logic[1:0] {

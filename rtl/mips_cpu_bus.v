@@ -134,22 +134,22 @@ module mips_cpu_bus(
             end
             STATE_EXECUTE : begin
 
-                if(opcode == OPCODE_LW) begin
-                    write = 0;
-                    read = 1;
-                    byteenable = 4'b1111;
-                    address_unaligned = alu_out;
-                    reg_file_write = 0;
-                end
-                else if(opcode == OPCODE_SW) begin
+                if(opcode == OPCODE_SW) begin
                     write = 0; 
                     read = 0;
-                    byteenable = 4'b1111;
                     address_unaligned = alu_out;
                     writedata_eb = rt_val;
                     reg_file_write = 0;
                 end
-                else if(opcode == OPCODE_LBU || opcode == OPCODE_LB || 
+                else if(opcode == OPCODE_SB || opcode == OPCODE_SH) begin
+                    write = 0;
+                    read = 0;
+                    address_unaligned = alu_out;
+                    reg_file_write = 0;
+                    writedata_eb = loadstore_word;
+                    byteenable = bytes_byteenable;
+                end
+                else if(opcode == OPCODE_LW || opcode == OPCODE_LBU || opcode == OPCODE_LB || 
                         opcode == OPCODE_LHU || opcode == OPCODE_LH || 
                         opcode == OPCODE_LWL || opcode == OPCODE_LWR) begin     // Don't know if I can shorten this by putting it as default.
                     write = 0;
@@ -181,6 +181,13 @@ module mips_cpu_bus(
                     OPCODE_SW : begin
                         write = 1;
                     end
+                    OPCODE_SB : begin
+                        write = 1;
+                    end
+                    OPCODE_SH : begin
+                        write = 1;
+                    end
+
                     default : begin     // LBU, LB, LHU, LH, LWL, LWR
                         reg_file_data_in = loadstore_word;
                     end
@@ -238,7 +245,7 @@ module mips_cpu_bus(
                                     state <= STATE_MEMORY;
                                 end 
                             end
-                            else if(opcode == OPCODE_SW) begin
+                            else if(opcode == OPCODE_SW || opcode == OPCODE_SB || opcode == OPCODE_SH) begin
                                 if(!waitrequest) begin 
                                     state <= STATE_MEMORY;
                                 end
