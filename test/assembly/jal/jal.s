@@ -10,7 +10,7 @@ main:
     addiu $2, $2, 7
 
 next:
-    addiu $2, $2, 2
+    addiu $2, $2, 2 
     jr $31
     addiu $2, $2, 3
     addiu $2, $2, 5
