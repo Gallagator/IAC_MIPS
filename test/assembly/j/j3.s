@@ -14,8 +14,7 @@ main:
 
 next:
     jr $0
-    mflo $2
-
+    addu $2, $3, $5
 
 .end	main
 

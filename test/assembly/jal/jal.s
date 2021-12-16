@@ -2,6 +2,7 @@
 	.align	2
 	.globl	main
 	.ent	main
+    .option pic0
 main:
     .set	noreorder
     jal procedure
@@ -9,7 +10,7 @@ main:
     jr $0
     addiu $2, $2, 7
 
-    procedure:
+procedure:
     jr $0
     addiu $2, $2, 5
 
