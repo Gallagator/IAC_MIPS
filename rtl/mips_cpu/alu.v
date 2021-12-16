@@ -29,7 +29,6 @@ module alu(
             FUNCT_SLT  : r = $signed(a) < $signed(b) ? 1 : 0;
             default : r = 0;
         endcase
-        $display("ALU   a: %x, b: %x, r: %x", a, b, r);
     end
 
 
