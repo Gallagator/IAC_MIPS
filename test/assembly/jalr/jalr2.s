@@ -12,7 +12,7 @@ main:
     addiu $2, $2, 2
     
     addiu $2, $2, 4
-    addiu $3, $3, 52
+    addiu $2, $2, 52
     jr $0
     addiu $2, $2, 32
 
