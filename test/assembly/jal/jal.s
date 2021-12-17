@@ -5,6 +5,7 @@
     .option pic0
 main:
     .set	noreorder
+    .option pic0
     jal procedure
     addiu $2, $2, 3
     jr $0

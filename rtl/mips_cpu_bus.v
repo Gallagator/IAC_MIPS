@@ -276,7 +276,7 @@ module mips_cpu_bus(
 
     end
 
-    always @(posedge clk) begin
+    always_ff @(posedge clk) begin
         waitrequest_prev <= waitrequest;
        
         if(reset) begin

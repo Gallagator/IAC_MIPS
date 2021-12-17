@@ -4,6 +4,7 @@
 	.ent	main
 main:
     .set	noreorder
+    .option pic0
     jal next
     addiu $2, $2, 1
     jr $0
@@ -11,6 +12,7 @@ main:
 
 next:
     addiu $2, $2, 4
+    .option pic0
     jal next2
     addiu $2, $2, 8
     addiu $2, $2, 16

@@ -1,8 +1,8 @@
 module mips_cpu_bus_generic_tb();
     parameter RAM_INIT_FILE = "";
     parameter EXPECTED_REG_V0 = -1213;
-    parameter TIMEOUT_CYCLES = 50_000;
-    parameter MAX_WAIT_REQUEST_CYCLES = 1;  // All testcases pass when it is 4 or bigger.
+    parameter TIMEOUT_CYCLES = 10_000;
+    parameter MAX_WAIT_REQUEST_CYCLES = 3;  // All testcases pass when it is 4 or bigger.
     
     logic clk;
     logic reset;
