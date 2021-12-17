@@ -86,7 +86,7 @@ module bytes_control(
                     byteenable = 4'b0011;
                 end
                 2: begin
-                    bytes_out = {fourth, third, 16'b0};
+                    bytes_out = (opcode == OPCODE_LHU) ? {16'b0, fourth, third} : ( (fourth >> 7) ? {16'hFFFF, fourth, third} : {16'b0, fourth, third});
                     byteenable = 4'b1100;
                 end
             endcase

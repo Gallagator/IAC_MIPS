@@ -5,9 +5,7 @@
 main:
 	.set	noreorder
     addiu $4, $0, 0xACFF
-    addiu $5, $0, 0x8
-    sw    $4, -4($5)    /* mem addr is 4 = 8 - 4 */
-    lw    $2, -4($5)    /* mem addr is 4 = 8 - 4 */
+    sw    $4, 0($0)    /* mem addr is 4 = 8 - 4 */
     jr $0
-    lhu   $2, -2($5)    /* Address calculation must be a multiple of 2 */ 
+    lhu   $2, 0($0)    /* Address calculation must be a multiple of 2 */ 
 .end	main
